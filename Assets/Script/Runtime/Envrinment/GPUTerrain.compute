@@ -1,0 +1,158 @@
+#pragma kernel CreatePathLodList
+#pragma kernel CreateBaseNode
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+
+struct NodePatchData{
+    float3 boundsMax;
+    float3 boundsMin;
+    uint2 nodeXY;
+    uint2 patchXY;
+    uint LOD;
+};
+
+struct BaseData{
+    float3 cameraWorldPos;
+    float fov;
+    uint patchSize;
+    uint nodeDevidePatchNum;
+    uint worldSize;
+    uint worldHeightScale;
+    uint lodJudgeFector;
+    uint maxLOD;
+};
+
+AppendStructuredBuffer<NodePatchData> _AppendTempList;
+ConsumeStructuredBuffer<NodePatchData> _ConsumeList;
+AppendStructuredBuffer<NodePatchData> _FinalPatchList;
+Texture2D<float4>_MinMaxHeightMap;
+uniform float4 _GlobalValues[10];
+uniform int _NodeIndexs[10];
+uniform uint CURRENT_LOD;
+
+RWBuffer<uint>NodeBrunchList;
+
+inline BaseData GenerateBaseData(float4 valueList[10]){
+    BaseData baseData;
+    baseData.cameraWorldPos = float3(valueList[0].x, valueList[0].y, valueList[0].z);
+    baseData.fov = valueList[0].w;
+    baseData.patchSize=valueList[1].z;
+    baseData.nodeDevidePatchNum =  valueList[2].x;
+    baseData.worldSize=valueList[1].y;
+    baseData.worldHeightScale = valueList[2].z;
+    baseData.lodJudgeFector = valueList[2].y;
+    baseData.maxLOD=valueList[1].x;
+    return baseData;
+}
+
+
+NodePatchData CreateEmptyNodePatchData(){
+    NodePatchData nodeData;
+    nodeData.nodeXY = 0;
+    nodeData.patchXY = 0;
+    nodeData.LOD = 0;
+    nodeData.boundsMax = 0;
+    nodeData.boundsMin = 0;
+    return nodeData;
+}
+
+[numthreads(1,1,1)]
+void CreateBaseNode(uint3 id : SV_DispatchThreadID)
+{
+    BaseData baseData = GenerateBaseData(_GlobalValues);
+    NodePatchData nodeData = CreateEmptyNodePatchData();
+    nodeData.nodeXY = id.xy;
+    nodeData.LOD = baseData.maxLOD;
+    _AppendTempList.Append(nodeData);
+}
+
+
+
+inline float GetNodeSizeByLod(BaseData baseData,uint LOD){
+    return baseData.patchSize*baseData.nodeDevidePatchNum*(1<<LOD);
+}
+
+inline int GetNodeNumInLod(BaseData baseData,uint LOD)
+{
+   return  floor(baseData.worldSize/GetNodeSizeByLod(baseData,LOD)+0.1f);
+}
+
+inline float2 GetNodeCenterPos(BaseData baseData,NodePatchData nodeData)
+{
+    float nodeSize = nodeData.boundsMax.x*2;
+    uint nodeCount = GetNodeNumInLod(baseData, nodeData.LOD);
+    float2 nodePos = nodeSize * (nodeData.nodeXY + 0.5 - nodeCount * 0.5);
+    return nodePos;
+}
+
+
+
+void CalNodeBounds(BaseData baseData,inout NodePatchData nodeData){
+    float2 height = _MinMaxHeightMap.mips[nodeData.LOD+3][nodeData.nodeXY].xy;
+    float2 minMaxHeight = (height-0.5)*2*baseData.worldHeightScale;
+    float nodeSize = GetNodeSizeByLod(baseData,nodeData.LOD);
+    nodeData.boundsMax = float3(nodeSize*0.5,minMaxHeight.y,nodeSize*0.5);
+    nodeData.boundsMin = float3(nodeSize*-0.5,minMaxHeight.x,nodeSize*-0.5);
+}
+
+int GetNodeIndex(BaseData baseData,uint LOD,float2 nodeXY){
+    return _NodeIndexs[LOD]+nodeXY.y+nodeXY.x* GetNodeNumInLod(baseData,LOD);
+}
+
+uint IsNeedQuad(BaseData baseData,NodePatchData nodeData)
+{
+    if(nodeData.LOD==0)
+        return 0;
+    float nodeSize = GetNodeSizeByLod(baseData, nodeData.LOD);
+    float3 cameraPos = baseData.cameraWorldPos;
+    float fov = baseData.fov;
+    float2 nodePos = GetNodeCenterPos(baseData,nodeData);
+
+    float dis = distance(cameraPos, float3(nodeSize, nodeData.boundsMax.y, nodeSize));
+    float result = baseData.lodJudgeFector * nodeSize / (dis * fov);
+    return step(1, result);
+}
+
+
+
+
+
+[numthreads(1,1,1)]
+void CreatePathLodList (uint3 id : SV_DispatchThreadID)
+{
+    BaseData baseData = GenerateBaseData(_GlobalValues);
+    //Get BaseNodeData(5x5)
+    NodePatchData nodeData = _ConsumeList.Consume();
+
+    //Set Data
+    uint2 nodeXY = nodeData.nodeXY;
+    nodeData.LOD = CURRENT_LOD;
+    CalNodeBounds(baseData,nodeData);
+    int nodeIndex=GetNodeIndex(baseData, nodeData.LOD,nodeXY);
+    uint needQuad = IsNeedQuad(baseData, nodeData);
+    if(needQuad==1)
+    {
+        NodePatchData nodeData0=CreateEmptyNodePatchData();
+        NodePatchData nodeData1=CreateEmptyNodePatchData();
+        NodePatchData nodeData2=CreateEmptyNodePatchData();
+        NodePatchData nodeData3=CreateEmptyNodePatchData();
+
+        nodeData0.nodeXY = nodeXY * 2;
+        nodeData1.nodeXY = nodeXY * 2 + uint2(0, 1);
+        nodeData2.nodeXY = nodeXY * 2 + uint2(1, 0);
+        nodeData3.nodeXY = nodeXY * 2 + uint2(1, 1);
+
+        _AppendTempList.Append(nodeData0);
+        _AppendTempList.Append(nodeData1);
+        _AppendTempList.Append(nodeData2);
+        _AppendTempList.Append(nodeData3);
+
+         NodeBrunchList[nodeIndex] = 1;
+         
+    }else{
+        _FinalPatchList.Append(nodeData);
+        NodeBrunchList[nodeIndex]=2;
+        
+    }
+
+}
