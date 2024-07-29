@@ -30,7 +30,7 @@ namespace FC.Terrain
         public EnvironmentSettings environmentSettings;
         public ComputeShader GPUTerrainCS;
         public bool debug;
-        private TerrainCreateImpl terrainCreateImpl;
+        public TerrainCreateImpl terrainCreateImpl;
 
         protected override void Awake()
         {
@@ -51,6 +51,7 @@ namespace FC.Terrain
             terrainCreateImpl.ExectCmd();
 
         }
+       
 
         private void OnDisable()
         {

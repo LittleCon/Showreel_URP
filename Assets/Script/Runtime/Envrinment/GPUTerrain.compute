@@ -14,18 +14,19 @@ struct NodePatchData{
 struct BaseData{
     float3 cameraWorldPos;
     float fov;
-    uint patchSize;
-    uint nodeDevidePatchNum;
-    uint worldSize;
-    uint worldHeightScale;
-    uint lodJudgeFector;
-    uint maxLOD;
+    float patchSize;
+    int nodeDevidePatchNum;
+    float worldSize;
+    float worldHeightScale;
+    float lodJudgeFector;
+    int maxLOD;
 };
 
 AppendStructuredBuffer<NodePatchData> _AppendTempList;
-ConsumeStructuredBuffer<NodePatchData> _ConsumeList;
 AppendStructuredBuffer<NodePatchData> _FinalPatchList;
-Texture2D<float4>_MinMaxHeightMap;
+ConsumeStructuredBuffer<NodePatchData> _ConsumeList;
+
+Texture2D<float2>_MinMaxHeightMap;
 uniform float4 _GlobalValues[10];
 uniform int _NodeIndexs[10];
 uniform uint CURRENT_LOD;
@@ -68,18 +69,18 @@ void CreateBaseNode(uint3 id : SV_DispatchThreadID)
 
 
 
-inline float GetNodeSizeByLod(BaseData baseData,uint LOD){
+inline float GetNodeSizeByLod(BaseData baseData, int LOD){
     return baseData.patchSize*baseData.nodeDevidePatchNum*(1<<LOD);
 }
 
-inline int GetNodeNumInLod(BaseData baseData,uint LOD)
+inline int GetNodeNumInLod(BaseData baseData, int LOD)
 {
    return  floor(baseData.worldSize/GetNodeSizeByLod(baseData,LOD)+0.1f);
 }
 
 inline float2 GetNodeCenterPos(BaseData baseData,NodePatchData nodeData)
 {
-    float nodeSize = nodeData.boundsMax.x*2;
+    float nodeSize = GetNodeSizeByLod(baseData,nodeData.LOD);
     uint nodeCount = GetNodeNumInLod(baseData, nodeData.LOD);
     float2 nodePos = nodeSize * (nodeData.nodeXY + 0.5 - nodeCount * 0.5);
     return nodePos;
@@ -103,12 +104,12 @@ uint IsNeedQuad(BaseData baseData,NodePatchData nodeData)
 {
     if(nodeData.LOD==0)
         return 0;
-    float nodeSize = GetNodeSizeByLod(baseData, nodeData.LOD);
     float3 cameraPos = baseData.cameraWorldPos;
     float fov = baseData.fov;
+    float nodeSize = GetNodeSizeByLod(baseData, nodeData.LOD);
     float2 nodePos = GetNodeCenterPos(baseData,nodeData);
 
-    float dis = distance(cameraPos, float3(nodeSize, nodeData.boundsMax.y, nodeSize));
+    float dis = distance(cameraPos, float3(nodePos.x, nodeData.boundsMax.y, nodePos.y));
     float result = baseData.lodJudgeFector * nodeSize / (dis * fov);
     return step(1, result);
 }
@@ -130,6 +131,7 @@ void CreatePathLodList (uint3 id : SV_DispatchThreadID)
     CalNodeBounds(baseData,nodeData);
     int nodeIndex=GetNodeIndex(baseData, nodeData.LOD,nodeXY);
     uint needQuad = IsNeedQuad(baseData, nodeData);
+    
     if(needQuad==1)
     {
         NodePatchData nodeData0=CreateEmptyNodePatchData();
@@ -149,10 +151,11 @@ void CreatePathLodList (uint3 id : SV_DispatchThreadID)
 
          NodeBrunchList[nodeIndex] = 1;
          
-    }else{
+    }
+    else
+    {
         _FinalPatchList.Append(nodeData);
         NodeBrunchList[nodeIndex]=2;
-        
     }
 
 }

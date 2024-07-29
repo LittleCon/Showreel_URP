@@ -1,5 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using Unity.Mathematics;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -62,7 +65,21 @@ namespace FC.Terrain{
         private ComputeBuffer lengthLogBuffer;
 #endif
         #endregion
-
+        private List<int> _nodeIndexOffsetList = new List<int>();
+        public List<int> nodeIndexOffsetList
+        {
+            get
+            {
+                if (_nodeIndexOffsetList.Count == 0)
+                {
+                    for (int i = 0; i <= environmentSettings.maxLodLevel; i++)
+                    {
+                        _nodeIndexOffsetList.Add(GetNodeIndexOffset(i));
+                    }
+                }
+                return _nodeIndexOffsetList;
+            }
+        }
         public TerrainCreateImpl(Camera camera,EnvironmentSettings environmentSettings,ComputeShader computeShader)
         {
             cmd = new();
@@ -101,7 +118,16 @@ namespace FC.Terrain{
             createPathLODKernelID = GPUTerrainCS.FindKernel("CreatePathLodList");
 
         }
-
+        public int GetNodeIndexOffset(int LOD)
+        {
+            int result = 0;
+            for (int i = 0; i < LOD; i++)
+            {
+                int nodenum = GetNodeNumInLod(i);
+                result += nodenum * nodenum;
+            }
+            return result;
+        }
         private void InitBuffer()
         {
             //需要先计算出Buffer可能存放的最大数据，即World划分为6级LOD时最多具有的Node数量
@@ -120,28 +146,9 @@ namespace FC.Terrain{
 
             dispatchArgs = new ComputeBuffer(3, sizeof(uint), ComputeBufferType.IndirectArguments);
 
+         
             nodeLodIndexBuffer = new ComputeBuffer(environmentSettings.maxLodLevel + 1, sizeof(int));
-            nodeLodIndexBuffer.SetData(nodeLodIndexs);
-
-            nodeLodIndexs = new int[environmentSettings.maxLodLevel + 1];
-            for (int i = 0; i <= environmentSettings.maxLodLevel; i++)
-            {
-                if (i == environmentSettings.maxLodLevel)
-                {
-                    nodeLodIndexs[i] = 0;
-                }
-                else
-                {
-                    var curLength = nodeLodIndexs.Length;
-                    var curIndex = 0;
-                    for (int j = environmentSettings.maxLodLevel; j > i; j--)
-                    {
-                        curIndex += GetNodeNumInLod(j);
-                    }
-                    nodeLodIndexs[i] = curIndex;
-                }
-
-            }
+            nodeLodIndexBuffer.SetData(nodeIndexOffsetList);
 
             globalValue[1].x = environmentSettings.maxLodLevel;
             globalValue[1].y = environmentSettings.worldSize;
@@ -200,12 +207,17 @@ namespace FC.Terrain{
             dispatchArgsData[2] = 1;
 
             cmd.SetBufferData(dispatchArgs, dispatchArgsData);
-
-
             cmd.DispatchCompute(GPUTerrainCS, createBaseNodeKernelID, dispatchArgs, 0);
-            var debugNodeData = new NodePatchData[25];
-            appendTempBuffer1.GetData(debugNodeData);
+
+            //var length = new int[1];
+            //cmd.CopyCounterValue(appendTempBuffer1, lengthLogBuffer, 0);
+            //lengthLogBuffer.GetData(length);
+            //var debugNodeData = new NodePatchData[25];
+            //appendTempBuffer1.GetData(debugNodeData);
         }
+
+        public  NodePatchData[] debugNodeData;
+
         /// <summary>
         /// 生成四叉树Node结果
         /// </summary>
@@ -215,8 +227,7 @@ namespace FC.Terrain{
             cmd.SetBufferCounterValue(appendTempBuffer2, 0);
             cmd.SetBufferCounterValue(finaPatchlList, 0);
             cmd.SetBufferCounterValue(NodeBrunchList, 0);
-            var debugNodeData2 = new NodePatchData[30];
-            appendTempBuffer1.GetData(debugNodeData2);
+       
             cmd.SetComputeBufferParam(GPUTerrainCS, createPathLODKernelID, ShaderProperties.GPUTerrain.finalPatchListID, finaPatchlList);
             cmd.SetComputeBufferParam(GPUTerrainCS, createPathLODKernelID, ShaderProperties.GPUTerrain.nodeIndexsID, nodeLodIndexBuffer);
             cmd.SetComputeBufferParam(GPUTerrainCS, createPathLODKernelID, ShaderProperties.GPUTerrain.nodeBrunchListID, NodeBrunchList);
@@ -234,14 +245,7 @@ namespace FC.Terrain{
                 cmd.DispatchCompute(GPUTerrainCS, createPathLODKernelID, dispatchArgs, 0);
 
                 cmd.CopyCounterValue(appendTempBuffer2, dispatchArgs, 0);
-                //cmd.SetBufferCounterValue(appendTempBuffer2, 0);
-#if UNITY_EDITOR
-                var debugNodeData = new NodePatchData[200];
-                appendTempBuffer2.GetData(debugNodeData);
-                cmd.CopyCounterValue(appendTempBuffer2, lengthLogBuffer, 0);
-                int[] length2 = new int[1];
-                lengthLogBuffer.GetData(length2);
-#endif
+
                 ComputeBuffer temp = appendTempBuffer1;
                 appendTempBuffer1 = appendTempBuffer2;
                 appendTempBuffer2 = temp;
@@ -251,12 +255,15 @@ namespace FC.Terrain{
             {
 
                 cmd.CopyCounterValue(finaPatchlList, lengthLogBuffer, 0);
-                int[] length = new int[1];
+                int[] length = new int[1] {1};
                 lengthLogBuffer.GetData(length);
+                debugNodeData = new NodePatchData[length[0]];
+                finaPatchlList.GetData(debugNodeData);
             }
 #endif
         }
 
+        
 
         public void OnDisable()
         {
