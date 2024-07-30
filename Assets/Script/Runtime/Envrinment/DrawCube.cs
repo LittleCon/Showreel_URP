@@ -1,6 +1,7 @@
 using FC.Terrain;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using TMPro;
 using Unity.Mathematics;
@@ -20,6 +21,7 @@ public class DrawCube : MonoBehaviour
     }
     private void Update()
     {
+        if (!EnvironmentManagerSystem.Instance.debug) return;
         terrainCreateImpl = EnvironmentManagerSystem.Instance.terrainCreateImpl;
         if(terrainCreateImpl.debugNodeData.Length!= marks.Count)
         {
@@ -48,7 +50,7 @@ public class DrawCube : MonoBehaviour
     float2 GetNodeCenterPos(NodePatchData nodeData, int LOD)
     {
         float nodeSize = terrainCreateImpl.GetNodeSizeInLod(LOD);
-        int nodeCount = (int)math.sqrt(terrainCreateImpl.GetNodeNumInLod(LOD));
+        int nodeCount = (int)terrainCreateImpl.GetNodeNumInLod(LOD);
         float2 nodePos = nodeSize * (nodeData.nodeXY + new float2(0.5f, 0.5f) - nodeCount * 0.5f);
         return nodePos;
     }

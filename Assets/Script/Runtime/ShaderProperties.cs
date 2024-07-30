@@ -14,5 +14,6 @@ public static class ShaderProperties
         public static int minMaxHeightMapID = Shader.PropertyToID("_MinMaxHeightMap");
         public static int currentLODID = Shader.PropertyToID("CURRENT_LOD");
         public static int nodeBrunchListID = Shader.PropertyToID("NodeBrunchList");
+        public static int sectorLODMapID = Shader.PropertyToID("_SectorLODMap");
     }
 }

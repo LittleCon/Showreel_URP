@@ -29,7 +29,8 @@ namespace FC.Terrain
     {
         public EnvironmentSettings environmentSettings;
         public ComputeShader GPUTerrainCS;
-        public bool debug;
+        public bool debugAllNode;
+        public bool debugAfterFrustumNode;
         public TerrainCreateImpl terrainCreateImpl;
 
         protected override void Awake()
@@ -48,10 +49,15 @@ namespace FC.Terrain
             terrainCreateImpl.GetCameraPalne();
             terrainCreateImpl.CreateBaseNode();
             terrainCreateImpl.CreateLodNodeList();
+            terrainCreateImpl.CreateNodeLodMap();
+            terrainCreateImpl.NodeFrustumCull();
+            terrainCreateImpl.NodeConvertToPatch();
             terrainCreateImpl.ExectCmd();
 
         }
-       
+#if UNITY_EDITOR
+        public bool debug => debugAfterFrustumNode | debugAllNode;
+#endif
 
         private void OnDisable()
         {

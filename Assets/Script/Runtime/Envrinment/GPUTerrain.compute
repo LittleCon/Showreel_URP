@@ -1,5 +1,7 @@
 #pragma kernel CreatePathLodList
 #pragma kernel CreateBaseNode
+#pragma kernel CreateNodeLodMap
+#pragma kernel FrustumCull
 // Create a RenderTexture with enableRandomWrite flag and set it
 // with cs.SetTexture
 
@@ -158,4 +160,101 @@ void CreatePathLodList (uint3 id : SV_DispatchThreadID)
         NodeBrunchList[nodeIndex]=2;
     }
 
+}
+
+RWTexture2D<float> _SectorLODMap;
+[numthreads(8,8,1)]
+void CreateNodeLodMap(uint3 id :SV_DispatchThreadID) 
+{
+    BaseData baseData = GenerateBaseData(_GlobalValues);
+    uint2 sectorID = id.xy;
+    for (int i = baseData.maxLOD; i > -0; i--)
+    {
+        int2 nodeXY = sectorID >> i;
+        uint nodeIndex = GetNodeIndex(baseData, i, nodeXY);
+        uint isbrunch = NodeBrunchList[nodeIndex];
+        if (isbrunch == 2) 
+        {
+            _SectorLODMap[sectorID] = i * 1.0 / baseData.maxLOD;
+            return;
+        }
+    }
+}
+
+inline void GetFrustumPlane(float4 valueList[10], inout float4 frustumPlane[6])
+{
+    frustumPlane[0] = valueList[4];
+    frustumPlane[1] = valueList[5];
+    frustumPlane[2] = valueList[6];
+    frustumPlane[3] = valueList[7];
+    frustumPlane[4] = valueList[8];
+    frustumPlane[5] = valueList[9];
+}
+
+bool IsOutSidePlane(float4 plane, float3 position)
+{
+    return dot(plane.xyz, position) + plane.w < 0;
+}
+
+
+//true: avalible
+//flase: culled
+bool FrustumCullBound(float3 minPos, float3 maxPos, float4 planes[6])
+{
+    [unroll]
+    for (int i = 0; i < 6; i++)
+    {
+        float3 p = minPos;
+        float3 normal = planes[i].xyz;
+        if (normal.x >= 0)
+            p.x = maxPos.x;
+        if (normal.y >= 0)
+            p.y = maxPos.y;
+        if (normal.z >= 0)
+            p.z = maxPos.z;
+        if (IsOutSidePlane(planes[i], p))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+
+[numthreads(1,1,1)]
+void FrustumCull(uint3 groupId : SV_GroupID)
+{
+    BaseData baseData = GenerateBaseData(_GlobalValues);
+    NodePatchData nodeData = _ConsumeList.Consume();
+
+    float2 center = GetNodeCenterPos(baseData, nodeData);
+    float3 center_y0 = float3(center.x, 0, center.y);
+    float4 frustumPlane[6];
+    GetFrustumPlane(_GlobalValues, frustumPlane);
+
+    bool frusAvalible = FrustumCullBound(center_y0 + nodeData.boundsMin, center_y0 + nodeData.boundsMax, frustumPlane);
+    if (frusAvalible)
+    {
+        _AppendTempList.Append(nodeData);
+    }
+}
+
+[numthreads(1,1,1)]
+void NodeConvertToPatch(uint3 id:SV_GroupThreadID) 
+{
+    NodePatchData nodeData = _ConsumeList.Consume();
+    BaseData baseData = GenerateBaseData(_GlobalValues);
+    int patchNum = baseData.nodeDevidePatchNum;
+
+    for (int i = 0; i < patchNum; i++) 
+    {
+        for (int j = 0; j < patchNum; j++) 
+        {
+            NodePatchData patchData = CreateEmptyNodePatchData();
+            patchData.nodeXY = nodeData.nodeXY;
+            patchData.LOD = nodeData.LOD;
+            ptachData.patchXY = uint2(i, j);
+            _AppendTempList.Append(patch);
+        }
+    }
 }

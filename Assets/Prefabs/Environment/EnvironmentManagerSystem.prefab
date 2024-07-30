@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1997620340495381880}
   - component: {fileID: 8537683968673832522}
+  - component: {fileID: 414911433627610877}
   m_Layer: 0
   m_Name: EnvironmentManagerSystem
   m_TagString: Untagged
@@ -47,4 +48,18 @@ MonoBehaviour:
   environmentSettings: {fileID: 11400000, guid: 0bf2482a6e1604945b49eb42fd2083e2,
     type: 2}
   GPUTerrainCS: {fileID: 7200000, guid: 38cb63b79b43f3448b5bb3f05fe49f0d, type: 3}
-  debug: 0
+  debug: 1
+--- !u!114 &414911433627610877
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6710797944669668235}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab6c3c13ccd2a4a4b9c08165e2546fa8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  terrainMarkGo: {fileID: 1624075620186330691, guid: 4953fe2e56224b847af05cc77e7a6fe2,
+    type: 3}
