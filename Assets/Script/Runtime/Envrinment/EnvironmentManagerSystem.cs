@@ -31,8 +31,9 @@ namespace FC.Terrain
         public ComputeShader GPUTerrainCS;
         public bool debugAllNode;
         public bool debugAfterFrustumNode;
+        public bool debugPatch;
         public TerrainCreateImpl terrainCreateImpl;
-
+        
         protected override void Awake()
         {
             base.Awake();
@@ -56,7 +57,7 @@ namespace FC.Terrain
 
         }
 #if UNITY_EDITOR
-        public bool debug => debugAfterFrustumNode | debugAllNode;
+        public bool debug => debugAfterFrustumNode | debugAllNode|| debugPatch;
 #endif
 
         private void OnDisable()

@@ -322,6 +322,25 @@ namespace FC.Terrain{
             cmd.SetComputeBufferParam(GPUTerrainCS, nodeConvertToPatchKernelID, ShaderProperties.GPUTerrain.consumeListID, appendTempBuffer1);
             cmd.SetComputeBufferParam(GPUTerrainCS, nodeConvertToPatchKernelID, ShaderProperties.GPUTerrain.appendTempListID, appendTempBuffer2);
             cmd.DispatchCompute(GPUTerrainCS, nodeConvertToPatchKernelID, dispatchArgs, 0);
+#if UNITY_EDITOR
+            if (EnvironmentManagerSystem.Instance.debugPatch)
+            {
+                
+                cmd.CopyCounterValue(appendTempBuffer2, lengthLogBuffer, 0);
+                int[] length = new int[1] { 1 };
+                lengthLogBuffer.GetData(length);
+                if (length[0] == 0)
+                    debugNodeData = new NodePatchData[1];
+                else
+                    debugNodeData = new NodePatchData[length[0]];
+                appendTempBuffer2.GetData(debugNodeData);
+            }
+#endif
+        }
+
+        public void HizMapCull() 
+        {
+
         }
 
 

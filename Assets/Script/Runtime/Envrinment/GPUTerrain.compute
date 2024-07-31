@@ -2,6 +2,7 @@
 #pragma kernel CreateBaseNode
 #pragma kernel CreateNodeLodMap
 #pragma kernel FrustumCull
+#pragma kernel NodeConvertToPatch
 // Create a RenderTexture with enableRandomWrite flag and set it
 // with cs.SetTexture
 
@@ -253,8 +254,38 @@ void NodeConvertToPatch(uint3 id:SV_GroupThreadID)
             NodePatchData patchData = CreateEmptyNodePatchData();
             patchData.nodeXY = nodeData.nodeXY;
             patchData.LOD = nodeData.LOD;
-            ptachData.patchXY = uint2(i, j);
-            _AppendTempList.Append(patch);
+            patchData.patchXY = uint2(i, j);
+            _AppendTempList.Append(patchData);
         }
     }
 }
+
+//get patchData around(left,down,right,up) lod 
+//void GetLodTrans(inout NodePatchData patchData, BaseData baseData)
+//{
+//    patchData.LodTrans = 0;
+//    int lod = patchData.LOD;
+//    int2 sectorXY = patchData.nodeXY * (1 << lod);
+//
+//    if (patchData.patchXY.x == 0) {}
+//}
+//
+//[numthreads(1,1,1)]
+//void HizCull(uint3 :SV_DispatchThreadID) 
+//{
+//    BaseData baseData = GenerateBaseData();
+//
+//    NodePatchData patchData = _ConsumeList.Consume();
+//
+//    float patchSize = GetPatchSizeInLod(baseData, patchData.LOD);
+//    float2 nodePos = GetNodeCenterPos(baseData, patchData);
+//    float2 patchPosInNode = GetPatchPosInNode(baseData, patchData.patchXY, patchData.LOD);
+//
+//    float2 patchPos = nodePos + patchPosInNode;
+//
+//    uint2 patchUV = patchData.NodeXY * baseData.nodeDevidePatch + patchData.patchXY;
+//
+//    float2 heightRange = (MinMaxHeightMap.mips[patch.LOD][patchUV].xy - 0.5) * 2 * base.worldHeightScale;
+//
+//    GetLodTrans(patchData, baseData);
+//}

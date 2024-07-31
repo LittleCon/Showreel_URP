@@ -16,4 +16,14 @@ public static class ShaderProperties
         public static int nodeBrunchListID = Shader.PropertyToID("NodeBrunchList");
         public static int sectorLODMapID = Shader.PropertyToID("_SectorLODMap");
     }
+
+    public struct HizMap 
+    {
+        public static int inputDepthMapID = Shader.PropertyToID("_InputDepthMap");
+        public static int inputDepthMapSize = Shader.PropertyToID("_InputDepthMapSize");
+        public static int hizMap0ID = Shader.PropertyToID("HIZ_MAP_Mip0");
+        public static int hizMap1ID = Shader.PropertyToID("HIZ_MAP_Mip1");
+        public static int hizMap2ID = Shader.PropertyToID("HIZ_MAP_Mip2");
+        public static int hizMap3ID = Shader.PropertyToID("HIZ_MAP_Mip3");
+    }
 }

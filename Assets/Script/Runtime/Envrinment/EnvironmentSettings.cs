@@ -32,6 +32,7 @@ namespace FC
 
         public Texture2D heightMap;
         public float worldSizeScale;
+        public RenderTexture hizMap;
 
     }
 
