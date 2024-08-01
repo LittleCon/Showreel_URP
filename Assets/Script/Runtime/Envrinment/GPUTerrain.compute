@@ -3,8 +3,12 @@
 #pragma kernel CreateNodeLodMap
 #pragma kernel FrustumCull
 #pragma kernel NodeConvertToPatch
-// Create a RenderTexture with enableRandomWrite flag and set it
-// with cs.SetTexture
+#pragma kernel HizCull
+
+
+
+#pragma multi_compile_local __ _REVERSE_Z
+#pragma multi_compile_local __ _OPENGL_ES_3
 
 struct NodePatchData{
     float3 boundsMax;
@@ -12,6 +16,7 @@ struct NodePatchData{
     uint2 nodeXY;
     uint2 patchXY;
     uint LOD;
+    int4 LodTrans;
 };
 
 struct BaseData{
@@ -22,7 +27,15 @@ struct BaseData{
     float worldSize;
     float worldHeightScale;
     float lodJudgeFector;
+    float2 hizMapSize;
+    int gridNum;
     int maxLOD;
+};
+
+struct Bound
+{
+    float3 minPos;
+    float3 maxPos;
 };
 
 AppendStructuredBuffer<NodePatchData> _AppendTempList;
@@ -32,33 +45,19 @@ ConsumeStructuredBuffer<NodePatchData> _ConsumeList;
 Texture2D<float2>_MinMaxHeightMap;
 uniform float4 _GlobalValues[10];
 uniform int _NodeIndexs[10];
-uniform uint CURRENT_LOD;
+uniform uint _CurrentLOD;
+RWTexture2D<float> _SectorLODMap;
+RWBuffer<uint>_NodeBrunchList;
 
-RWBuffer<uint>NodeBrunchList;
+//HizCull
+uniform float4x4 _VPMatrix;
+Texture2D<float> _HizMap;
+RWBuffer<uint> _InstanceArgs;
+RWTexture2D<float4> _ResultPatchMap;
 
-inline BaseData GenerateBaseData(float4 valueList[10]){
-    BaseData baseData;
-    baseData.cameraWorldPos = float3(valueList[0].x, valueList[0].y, valueList[0].z);
-    baseData.fov = valueList[0].w;
-    baseData.patchSize=valueList[1].z;
-    baseData.nodeDevidePatchNum =  valueList[2].x;
-    baseData.worldSize=valueList[1].y;
-    baseData.worldHeightScale = valueList[2].z;
-    baseData.lodJudgeFector = valueList[2].y;
-    baseData.maxLOD=valueList[1].x;
-    return baseData;
-}
+#include "./GPUTerrainFunc.hlsl"
 
 
-NodePatchData CreateEmptyNodePatchData(){
-    NodePatchData nodeData;
-    nodeData.nodeXY = 0;
-    nodeData.patchXY = 0;
-    nodeData.LOD = 0;
-    nodeData.boundsMax = 0;
-    nodeData.boundsMin = 0;
-    return nodeData;
-}
 
 [numthreads(1,1,1)]
 void CreateBaseNode(uint3 id : SV_DispatchThreadID)
@@ -72,55 +71,6 @@ void CreateBaseNode(uint3 id : SV_DispatchThreadID)
 
 
 
-inline float GetNodeSizeByLod(BaseData baseData, int LOD){
-    return baseData.patchSize*baseData.nodeDevidePatchNum*(1<<LOD);
-}
-
-inline int GetNodeNumInLod(BaseData baseData, int LOD)
-{
-   return  floor(baseData.worldSize/GetNodeSizeByLod(baseData,LOD)+0.1f);
-}
-
-inline float2 GetNodeCenterPos(BaseData baseData,NodePatchData nodeData)
-{
-    float nodeSize = GetNodeSizeByLod(baseData,nodeData.LOD);
-    uint nodeCount = GetNodeNumInLod(baseData, nodeData.LOD);
-    float2 nodePos = nodeSize * (nodeData.nodeXY + 0.5 - nodeCount * 0.5);
-    return nodePos;
-}
-
-
-
-void CalNodeBounds(BaseData baseData,inout NodePatchData nodeData){
-    float2 height = _MinMaxHeightMap.mips[nodeData.LOD+3][nodeData.nodeXY].xy;
-    float2 minMaxHeight = (height-0.5)*2*baseData.worldHeightScale;
-    float nodeSize = GetNodeSizeByLod(baseData,nodeData.LOD);
-    nodeData.boundsMax = float3(nodeSize*0.5,minMaxHeight.y,nodeSize*0.5);
-    nodeData.boundsMin = float3(nodeSize*-0.5,minMaxHeight.x,nodeSize*-0.5);
-}
-
-int GetNodeIndex(BaseData baseData,uint LOD,float2 nodeXY){
-    return _NodeIndexs[LOD]+nodeXY.y+nodeXY.x* GetNodeNumInLod(baseData,LOD);
-}
-
-uint IsNeedQuad(BaseData baseData,NodePatchData nodeData)
-{
-    if(nodeData.LOD==0)
-        return 0;
-    float3 cameraPos = baseData.cameraWorldPos;
-    float fov = baseData.fov;
-    float nodeSize = GetNodeSizeByLod(baseData, nodeData.LOD);
-    float2 nodePos = GetNodeCenterPos(baseData,nodeData);
-
-    float dis = distance(cameraPos, float3(nodePos.x, nodeData.boundsMax.y, nodePos.y));
-    float result = baseData.lodJudgeFector * nodeSize / (dis * fov);
-    return step(1, result);
-}
-
-
-
-
-
 [numthreads(1,1,1)]
 void CreatePathLodList (uint3 id : SV_DispatchThreadID)
 {
@@ -130,7 +80,7 @@ void CreatePathLodList (uint3 id : SV_DispatchThreadID)
 
     //Set Data
     uint2 nodeXY = nodeData.nodeXY;
-    nodeData.LOD = CURRENT_LOD;
+    nodeData.LOD = _CurrentLOD;
     CalNodeBounds(baseData,nodeData);
     int nodeIndex=GetNodeIndex(baseData, nodeData.LOD,nodeXY);
     uint needQuad = IsNeedQuad(baseData, nodeData);
@@ -152,20 +102,19 @@ void CreatePathLodList (uint3 id : SV_DispatchThreadID)
         _AppendTempList.Append(nodeData2);
         _AppendTempList.Append(nodeData3);
 
-         NodeBrunchList[nodeIndex] = 1;
+         _NodeBrunchList[nodeIndex] = 1;
          
     }
     else
     {
         _FinalPatchList.Append(nodeData);
-        NodeBrunchList[nodeIndex]=2;
+        _NodeBrunchList[nodeIndex]=2;
     }
 
 }
 
-RWTexture2D<float> _SectorLODMap;
-[numthreads(8,8,1)]
-void CreateNodeLodMap(uint3 id :SV_DispatchThreadID) 
+[numthreads(8, 8, 1)]
+void CreateNodeLodMap(uint3 id :SV_DispatchThreadID)
 {
     BaseData baseData = GenerateBaseData(_GlobalValues);
     uint2 sectorID = id.xy;
@@ -173,54 +122,14 @@ void CreateNodeLodMap(uint3 id :SV_DispatchThreadID)
     {
         int2 nodeXY = sectorID >> i;
         uint nodeIndex = GetNodeIndex(baseData, i, nodeXY);
-        uint isbrunch = NodeBrunchList[nodeIndex];
-        if (isbrunch == 2) 
+        uint isbrunch = _NodeBrunchList[nodeIndex];
+        if (isbrunch == 2)
         {
             _SectorLODMap[sectorID] = i * 1.0 / baseData.maxLOD;
             return;
         }
     }
 }
-
-inline void GetFrustumPlane(float4 valueList[10], inout float4 frustumPlane[6])
-{
-    frustumPlane[0] = valueList[4];
-    frustumPlane[1] = valueList[5];
-    frustumPlane[2] = valueList[6];
-    frustumPlane[3] = valueList[7];
-    frustumPlane[4] = valueList[8];
-    frustumPlane[5] = valueList[9];
-}
-
-bool IsOutSidePlane(float4 plane, float3 position)
-{
-    return dot(plane.xyz, position) + plane.w < 0;
-}
-
-
-//true: avalible
-//flase: culled
-bool FrustumCullBound(float3 minPos, float3 maxPos, float4 planes[6])
-{
-    [unroll]
-    for (int i = 0; i < 6; i++)
-    {
-        float3 p = minPos;
-        float3 normal = planes[i].xyz;
-        if (normal.x >= 0)
-            p.x = maxPos.x;
-        if (normal.y >= 0)
-            p.y = maxPos.y;
-        if (normal.z >= 0)
-            p.z = maxPos.z;
-        if (IsOutSidePlane(planes[i], p))
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
 
 [numthreads(1,1,1)]
 void FrustumCull(uint3 groupId : SV_GroupID)
@@ -260,32 +169,46 @@ void NodeConvertToPatch(uint3 id:SV_GroupThreadID)
     }
 }
 
-//get patchData around(left,down,right,up) lod 
-//void GetLodTrans(inout NodePatchData patchData, BaseData baseData)
-//{
-//    patchData.LodTrans = 0;
-//    int lod = patchData.LOD;
-//    int2 sectorXY = patchData.nodeXY * (1 << lod);
-//
-//    if (patchData.patchXY.x == 0) {}
-//}
-//
-//[numthreads(1,1,1)]
-//void HizCull(uint3 :SV_DispatchThreadID) 
-//{
-//    BaseData baseData = GenerateBaseData();
-//
-//    NodePatchData patchData = _ConsumeList.Consume();
-//
-//    float patchSize = GetPatchSizeInLod(baseData, patchData.LOD);
-//    float2 nodePos = GetNodeCenterPos(baseData, patchData);
-//    float2 patchPosInNode = GetPatchPosInNode(baseData, patchData.patchXY, patchData.LOD);
-//
-//    float2 patchPos = nodePos + patchPosInNode;
-//
-//    uint2 patchUV = patchData.NodeXY * baseData.nodeDevidePatch + patchData.patchXY;
-//
-//    float2 heightRange = (MinMaxHeightMap.mips[patch.LOD][patchUV].xy - 0.5) * 2 * base.worldHeightScale;
-//
-//    GetLodTrans(patchData, baseData);
-//}
+
+[numthreads(1,1,1)]
+void HizCull(uint3 id:SV_DispatchThreadID) 
+{
+    BaseData baseData = GenerateBaseData(_GlobalValues);
+
+    NodePatchData patchData = _ConsumeList.Consume();
+
+    float patchSize = GetPatchSizeInLod(baseData, patchData.LOD);
+    float2 nodePos = GetNodeCenterPos(baseData, patchData);
+    float2 patchPosInNode = GetPatchPosInNode(baseData, patchData.patchXY, patchData.LOD);
+
+    float2 patchPos = nodePos + patchPosInNode;
+
+    uint2 patchUV = patchData.nodeXY * baseData.nodeDevidePatchNum + patchData.patchXY;
+
+    float2 heightRange = (_MinMaxHeightMap.mips[patchData.LOD][patchUV].xy - 0.5) * 2 * baseData.worldHeightScale;
+
+    GetLodTrans(patchData, baseData);
+
+    float3 boundMin = float3(patchPos.x - patchSize * 0.5, heightRange.x, patchPos.y - patchSize * 0.5);
+    float3 boundMax = float3(patchPos.x + patchSize * 0.5, heightRange.y, patchPos.y + patchSize * 0.5);
+
+    bool isHizAvalible = HizCullBound(baseData, boundMin, boundMax);
+    if (isHizAvalible == false)
+    {
+        return;
+    }
+    uint currentIndex;
+    InterlockedAdd(_InstanceArgs[1], 1, currentIndex);
+    uint2 pixXY;
+    pixXY.y = currentIndex * 2 / 512;
+    pixXY.x = currentIndex * 2 - pixXY.y * 512;
+
+    float4 pix0, pix1;
+    pix0.x = patchData.nodeXY.x;
+    pix0.y = patchData.nodeXY.y;
+    pix0.z = patchData.patchXY.x * 100 + patchData.patchXY.y;
+    pix0.w = patchData.LOD;
+    pix1 = patchData.LodTrans;
+    _ResultPatchMap[pixXY] = pix0;
+    _ResultPatchMap[pixXY + uint2(1, 0)] = pix1;
+}

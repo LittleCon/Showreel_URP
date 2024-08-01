@@ -12,9 +12,14 @@ public static class ShaderProperties
         public static int nodeIndexsID = Shader.PropertyToID("_NodeIndexs");
         public static int consumeListID = Shader.PropertyToID("_ConsumeList"); 
         public static int minMaxHeightMapID = Shader.PropertyToID("_MinMaxHeightMap");
-        public static int currentLODID = Shader.PropertyToID("CURRENT_LOD");
-        public static int nodeBrunchListID = Shader.PropertyToID("NodeBrunchList");
+        public static int currentLODID = Shader.PropertyToID("_CurrentLOD");
+        public static int nodeBrunchListID = Shader.PropertyToID("_NodeBrunchList");
         public static int sectorLODMapID = Shader.PropertyToID("_SectorLODMap");
+        public static int vpMatrixID = Shader.PropertyToID("_VPMatrix");
+        public static int hizMapID = Shader.PropertyToID("_HizMap");
+        public static int instanceArgsID = Shader.PropertyToID("_InstanceArgs");
+        public static int resultPatchMapID = Shader.PropertyToID("_ResultPatchMap");
+
     }
 
     public struct HizMap 

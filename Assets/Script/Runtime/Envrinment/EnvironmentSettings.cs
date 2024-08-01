@@ -14,6 +14,8 @@ namespace FC
 
     }
 
+    
+
     [CreateAssetMenu(menuName ="Environment/CreateSettings",fileName ="EnvironmentSettings")]
     public class EnvironmentSettings : ScriptableObject
     {
@@ -24,6 +26,8 @@ namespace FC
         /// </summary>
         public int nodeDevidePatch = 8;
 
+        public int sectorVertexs = 17;
+
         public SectorSize sectorSize =SectorSize._8;
 
         public int maxLodLevel = 5;
@@ -33,7 +37,9 @@ namespace FC
         public Texture2D heightMap;
         public float worldSizeScale;
         public RenderTexture hizMap;
+        public  Vector2Int hizMapSize = new Vector2Int(2048, 1024);
 
+        public Material terrainMat;
     }
 
 }

@@ -14,8 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   worldSize: 10240
   nodeDevidePatch: 8
+  sectorVertexs: 17
   sectorSize: 8
   maxLodLevel: 5
   lodJudgeFector: 100
   heightMap: {fileID: 2800000, guid: cb32a1d0fc47c0a4cb5d2b7cd78f50bb, type: 2}
   worldSizeScale: 100
+  hizMap: {fileID: 0}
+  hizMapSize: {x: 2048, y: 1024}
+  terrainMat: {fileID: 2100000, guid: 1ed74edb413e1f548a503f257a9878ae, type: 2}

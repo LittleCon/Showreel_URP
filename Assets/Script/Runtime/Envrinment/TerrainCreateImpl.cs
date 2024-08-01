@@ -18,6 +18,16 @@ namespace FC.Terrain{
         private Camera mainCamera;
         private Plane[] frustumPalnes = new Plane[6];
         private Vector4[] globalValue = new Vector4[10];
+        private Matrix4x4 projcetMatrix;
+        private Matrix4x4 vpMatrix;
+        private Mesh terrainMesh;
+        private Material terrainMat;
+        private Bounds worldBound;
+
+        /// <summary>
+        /// Hiz剔除后的结果
+        /// </summary>
+        private RenderTexture resultPatchMap;
 
         #region computeShader函数索引
         private int createPathLODKernelID;
@@ -25,6 +35,7 @@ namespace FC.Terrain{
         private int createNodeLodMapKernelID;
         private int frustumCullKernelID;
         private int nodeConvertToPatchKernelID;
+        private int hizCullKernelID;
         #endregion
 
         #region ComputeBuffer
@@ -66,6 +77,10 @@ namespace FC.Terrain{
         /// </summary>
         private RenderTexture SectorLODMap;
 
+        private ComputeBuffer instanceArgsBuffer;
+
+        private uint[] instanceArgsData;
+
 #if UNITY_EDITOR
         /// <summary>
         /// 编辑状态下看某个Buffer实际长度
@@ -73,6 +88,7 @@ namespace FC.Terrain{
         private ComputeBuffer lengthLogBuffer;
 #endif
         #endregion
+
         private List<int> _nodeIndexOffsetList = new List<int>();
         public List<int> nodeIndexOffsetList
         {
@@ -97,6 +113,7 @@ namespace FC.Terrain{
             GPUTerrainCS = computeShader;
             InitKernelIndex();
             InitBuffer();
+            terrainMat = environmentSettings.terrainMat;
         }
 
         /// <summary>
@@ -122,11 +139,11 @@ namespace FC.Terrain{
         private void InitKernelIndex() 
         {
             createBaseNodeKernelID = GPUTerrainCS.FindKernel("CreateBaseNode");
-
             createPathLODKernelID = GPUTerrainCS.FindKernel("CreatePathLodList");
             createNodeLodMapKernelID = GPUTerrainCS.FindKernel("CreateNodeLodMap");
             frustumCullKernelID = GPUTerrainCS.FindKernel("FrustumCull");
             nodeConvertToPatchKernelID = GPUTerrainCS.FindKernel("NodeConvertToPatch");
+            hizCullKernelID = GPUTerrainCS.FindKernel("HizCull");
         }
         public int GetNodeIndexOffset(int LOD)
         {
@@ -138,8 +155,81 @@ namespace FC.Terrain{
             }
             return result;
         }
+
+        /// <summary>
+        /// 创建地形网格
+        /// </summary>
+        /// <param name="size">网格大小</param>
+        /// <param name="gridNum">网格顶点数(奇数)</param>
+        /// <returns></returns>
+        private Mesh CreateQuadMesh(Vector2 size,Vector2Int gridNum) 
+        {
+            Mesh mesh = new Mesh();
+            //最小四边形的大小(一个四边形=两个三角形）
+            Vector2 gridSize = size / (gridNum - Vector2.one);
+            Vector3[] vertices = new Vector3[gridNum.x * gridNum.y];
+            Vector2[] uvs = new Vector2[gridNum.x * gridNum.y];
+
+            for (int i = 0; i < gridNum.x; i++) 
+            {
+                for(int j = 0; j < gridNum.y; j++)
+                {
+                    float posx = gridSize.x * (i - gridNum.x / 2);
+                    float posz = gridSize.y * (i - gridNum.y / 2);
+                    Vector3 pos = new Vector3(posx, 0, posz);
+                    Vector2 uv = new Vector2(i * 1.0f / (gridNum.x - 1), j * 1.0f / (gridNum.y - 1));
+                    vertices[j * gridNum.x + i] = pos;
+                    uvs[j * gridNum.x + i] = uv;
+                }
+            }
+            mesh.vertices = vertices;
+
+            int[] indexs = new int[(gridNum.x - 1) * (gridNum.y - 1) * 6];
+            for (int i = 0; i < gridNum.x - 1; i++)
+            {
+                for (int j = 0; j < gridNum.y - 1; j++)
+                {
+                    int tri_index = (j * (gridNum.x - 1) + i);
+
+                    indexs[tri_index * 6] = j * gridNum.x + i;
+                    indexs[tri_index * 6 + 1] = (j + 1) * gridNum.x + i;
+                    indexs[tri_index * 6 + 2] = (j + 1) * gridNum.x + i + 1;
+
+                    indexs[tri_index * 6 + 3] = (j + 1) * gridNum.x + i + 1;
+                    indexs[tri_index * 6 + 4] = j * gridNum.x + i + 1;
+                    indexs[tri_index * 6 + 5] = j * gridNum.x + i;
+                }
+            }
+            mesh.triangles = indexs;
+            //mesh.uv = uvs;
+            mesh.RecalculateNormals();
+            return mesh;
+        }
+
         private void InitBuffer()
         {
+            if (SystemInfo.usesReversedZBuffer)
+            {
+                Debug.Log("EnableKeyword _REVERSE_Z");
+                GPUTerrainCS.EnableKeyword("_REVERSE_Z");
+            }
+            else
+            {
+                Debug.Log("DisableKeyword _REVERSE_Z");
+                GPUTerrainCS.DisableKeyword("_REVERSE_Z");
+            }
+
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLES3)
+            {
+                Debug.Log("EnableKeyword _OPENGL_ES_3");
+                GPUTerrainCS.EnableKeyword("_OPENGL_ES_3");
+            }
+            else
+            {
+                Debug.Log("DisableKeyword _OPENGL_ES_3");
+                GPUTerrainCS.DisableKeyword("_OPENGL_ES_3");
+            }
+
             //需要先计算出Buffer可能存放的最大数据，即World划分为6级LOD时最多具有的Node数量
             int totalNodeNum = 0;
             for (int i = 5; i >= 0; i--)
@@ -163,11 +253,10 @@ namespace FC.Terrain{
             globalValue[1].x = environmentSettings.maxLodLevel;
             globalValue[1].y = environmentSettings.worldSize;
             globalValue[1].z = (int)environmentSettings.sectorSize;
-            //globalValue[1].w = environmentSettings.PATCH_GRID_NUM;
             globalValue[2].x = environmentSettings.nodeDevidePatch;
             globalValue[2].z = environmentSettings.worldSizeScale;
-            //globalValue[2].w = TerrainDataManager.HIZMapSize.x;
-            //globalValue[3].x = TerrainDataManager.HIZMapSize.y;
+            globalValue[2].w = environmentSettings.hizMapSize.x;
+            globalValue[3].x = environmentSettings.hizMapSize.y;
 
             RenderTextureDescriptor sectorLODMapDes = new RenderTextureDescriptor(GetNodeNumInLod(0), GetNodeNumInLod(0), RenderTextureFormat.RFloat, 0, 1);
             sectorLODMapDes.enableRandomWrite = true;
@@ -175,8 +264,24 @@ namespace FC.Terrain{
             SectorLODMap.filterMode = FilterMode.Point;
             SectorLODMap.Create();
 
+            instanceArgsBuffer = new ComputeBuffer(5, sizeof(uint), ComputeBufferType.IndirectArguments);
+            terrainMesh = CreateQuadMesh(Vector2.one*(int)environmentSettings.sectorSize,environmentSettings.sectorVertexs*Vector2Int.one);
+            instanceArgsData = new uint[] { 0, 0, 0, 0, 0 };
+            instanceArgsData[0] = terrainMesh.GetIndexCount(0);
+            instanceArgsBuffer.SetData(instanceArgsData);
+
+            //rt尺寸代表了最多支持多少个物体？
+            RenderTextureDescriptor renderPatchMapDesc = new RenderTextureDescriptor(512, 512, RenderTextureFormat.ARGBFloat, 0, 1);
+            renderPatchMapDesc.enableRandomWrite = true;
+            resultPatchMap = RenderTexture.GetTemporary(renderPatchMapDesc);
+            resultPatchMap.filterMode = FilterMode.Point;
+            resultPatchMap.Create();
+
+            worldBound = new Bounds(Vector3.zero,new Vector3(environmentSettings.worldSize, environmentSettings.worldSizeScale, environmentSettings.worldSize));
+
+
 #if UNITY_EDITOR
-             lengthLogBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.IndirectArguments);
+            lengthLogBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.IndirectArguments);
 #endif
         }
 
@@ -340,7 +445,41 @@ namespace FC.Terrain{
 
         public void HizMapCull() 
         {
+            projcetMatrix = mainCamera.projectionMatrix;
+            projcetMatrix = GL.GetGPUProjectionMatrix(projcetMatrix,false);
+            vpMatrix = projcetMatrix * mainCamera.worldToCameraMatrix;
+            cmd.SetComputeMatrixParam(GPUTerrainCS, ShaderProperties.GPUTerrain.vpMatrixID, vpMatrix);
 
+            cmd.CopyCounterValue(appendTempBuffer2, dispatchArgs, 0);
+            instanceArgsData[1] = 0;
+            cmd.SetBufferData(instanceArgsBuffer, instanceArgsData);
+
+            cmd.SetComputeBufferParam(GPUTerrainCS, hizCullKernelID, ShaderProperties.GPUTerrain.instanceArgsID, instanceArgsBuffer);
+            cmd.SetComputeBufferParam(GPUTerrainCS, hizCullKernelID, ShaderProperties.GPUTerrain.consumeListID, appendTempBuffer2);
+            cmd.SetComputeTextureParam(GPUTerrainCS, hizCullKernelID, ShaderProperties.GPUTerrain.minMaxHeightMapID, environmentSettings.heightMap);
+            cmd.SetComputeTextureParam(GPUTerrainCS, hizCullKernelID, ShaderProperties.GPUTerrain.resultPatchMapID,resultPatchMap);
+            cmd.SetComputeTextureParam(GPUTerrainCS, hizCullKernelID, ShaderProperties.GPUTerrain.sectorLODMapID, SectorLODMap);
+            cmd.SetComputeTextureParam(GPUTerrainCS, hizCullKernelID, ShaderProperties.GPUTerrain.hizMapID, environmentSettings.hizMap);
+
+            cmd.DispatchCompute(GPUTerrainCS, hizCullKernelID, dispatchArgs, 0);
+            uint[] length = new uint[5];
+            instanceArgsBuffer.GetData(length);
+
+         
+        }
+
+        public void UpdateTerrainShaderData() 
+        {
+            terrainMat.SetVectorArray(ShaderProperties.GPUTerrain.globalValueID, globalValue);
+            terrainMat.SetTexture(ShaderProperties.GPUTerrain.resultPatchMapID, resultPatchMap);
+        }
+
+        public void DrawTerrainInstance() 
+        {
+            uint[] length = new uint[5];
+            instanceArgsBuffer.GetData(length);
+            Graphics.DrawMeshInstancedIndirect(terrainMesh, 0, terrainMat, worldBound, instanceArgsBuffer);
+           
         }
 
 
@@ -356,7 +495,6 @@ namespace FC.Terrain{
             if (cmd != null) cmd.Dispose();
 
             RenderTexture.ReleaseTemporary(SectorLODMap);
-
 #if UNITY_EDITOR
             if (lengthLogBuffer != null) lengthLogBuffer.Dispose();
 #endif

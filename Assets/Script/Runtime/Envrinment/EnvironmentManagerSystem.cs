@@ -4,6 +4,7 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Profiling;
 using UnityEngine.Rendering;
 
 namespace FC.Terrain
@@ -47,12 +48,30 @@ namespace FC.Terrain
         private void Update()
         {
             terrainCreateImpl.ClearCmd();
+            Profiler.BeginSample("GetCameraPalne");
             terrainCreateImpl.GetCameraPalne();
+            Profiler.EndSample();
+            Profiler.BeginSample("CreateBaseNode");
             terrainCreateImpl.CreateBaseNode();
+            Profiler.EndSample();
+            Profiler.BeginSample("CreateLodNodeList");
             terrainCreateImpl.CreateLodNodeList();
+            Profiler.EndSample();
+            Profiler.BeginSample("CreateNodeLodMap");
             terrainCreateImpl.CreateNodeLodMap();
+            Profiler.EndSample();
+            Profiler.BeginSample("NodeFrustumCull");
             terrainCreateImpl.NodeFrustumCull();
+            Profiler.EndSample();
+            Profiler.BeginSample("NodeConvertToPatch");
             terrainCreateImpl.NodeConvertToPatch();
+            Profiler.EndSample();
+            Profiler.BeginSample("HizMapCull");
+            terrainCreateImpl.HizMapCull();
+            Profiler.EndSample();
+
+            terrainCreateImpl.UpdateTerrainShaderData();
+            terrainCreateImpl.DrawTerrainInstance();
             terrainCreateImpl.ExectCmd();
 
         }
