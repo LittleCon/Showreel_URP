@@ -56,20 +56,15 @@ namespace FC.Terrain
             terrainCreateImpl.CreateBaseNode();
             terrainCreateImpl.CreateLodNodeList();
             terrainCreateImpl.CreateNodeLodMap();
-            if(!showCompeleteTerrain)
-                terrainCreateImpl.NodeFrustumCull();
+            terrainCreateImpl.NodeFrustumCull();
             terrainCreateImpl.NodeConvertToPatch();
             terrainCreateImpl.HizMapCull();
             terrainCreateImpl.UpdateTerrainShaderData();
             terrainCreateImpl.DrawTerrainInstance();
             terrainCreateImpl.ExectCmd();
-            terrainCreateImpl.ClearCmd();
-            terrainCreateImpl.DebugBuffer();
-            terrainCreateImpl.ExectCmd();
-
-
-
-
+            //terrainCreateImpl.ClearCmd();
+            //terrainCreateImpl.DebugBuffer();
+            //terrainCreateImpl.ExectCmd();
         }
 #if UNITY_EDITOR
         public bool debug => debugAfterFrustumNode | debugAllNode|| debugPatch;

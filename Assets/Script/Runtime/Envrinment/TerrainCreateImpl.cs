@@ -425,17 +425,17 @@ namespace FC.Terrain{
         {
 
             cmd.SetBufferCounterValue(appendTempBuffer2, 0);
-          
-            if (EnvironmentManagerSystem.Instance.showCompeleteTerrain)
-            {
-                cmd.CopyCounterValue(finaPatchlList, dispatchArgs, 0);
-                cmd.SetComputeBufferParam(GPUTerrainCS, nodeConvertToPatchKernelID, ShaderProperties.GPUTerrain.consumeListID, finaPatchlList);
-            }
-            else
-            {
-                cmd.CopyCounterValue(appendTempBuffer1, dispatchArgs, 0);
-                cmd.SetComputeBufferParam(GPUTerrainCS, nodeConvertToPatchKernelID, ShaderProperties.GPUTerrain.consumeListID, appendTempBuffer1);
-            }
+            cmd.CopyCounterValue(appendTempBuffer1, dispatchArgs, 0);
+            cmd.SetComputeBufferParam(GPUTerrainCS, nodeConvertToPatchKernelID, ShaderProperties.GPUTerrain.consumeListID, appendTempBuffer1);
+            //if (EnvironmentManagerSystem.Instance.showCompeleteTerrain)
+            //{
+            //    cmd.CopyCounterValue(finaPatchlList, dispatchArgs, 0);
+            //    cmd.SetComputeBufferParam(GPUTerrainCS, nodeConvertToPatchKernelID, ShaderProperties.GPUTerrain.consumeListID, finaPatchlList);
+            //}
+            //else
+            //{
+
+            //}
             cmd.SetComputeBufferParam(GPUTerrainCS, nodeConvertToPatchKernelID, ShaderProperties.GPUTerrain.appendTempListID, appendTempBuffer2);
             cmd.DispatchCompute(GPUTerrainCS, nodeConvertToPatchKernelID, dispatchArgs, 0);
 #if UNITY_EDITOR
@@ -455,7 +455,6 @@ namespace FC.Terrain{
             Matrix4x4 worldToCameraMatrix = mainCamera.worldToCameraMatrix;
             Matrix4x4 VPMatrix = platFormProjectionMatrix * worldToCameraMatrix;
             cmd.SetComputeMatrixParam(GPUTerrainCS, ShaderProperties.GPUTerrain.vpMatrixID, VPMatrix);
-            cmd.SetComputeIntParam(GPUTerrainCS, "NoHizCull", EnvironmentManagerSystem.Instance.showCompeleteTerrain ? 1 : 0);
             cmd.CopyCounterValue(appendTempBuffer2, dispatchArgs, 0);
             instanceArgsData[1] = 0;
             cmd.SetBufferData(instanceArgsBuffer, instanceArgsData);

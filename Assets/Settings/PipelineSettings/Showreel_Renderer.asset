@@ -34,8 +34,7 @@ MonoBehaviour:
     hdrDebugViewPS: {fileID: 4800000, guid: 573620ae32aec764abd4d728906d2587, type: 3}
   m_RendererFeatures:
   - {fileID: -7109657576456737138}
-  - {fileID: 8085380893975790015}
-  m_RendererFeatureMap: 8eaea1501a6c559dbf4128bb150b3570
+  m_RendererFeatureMap: 8eaea1501a6c559d
   m_UseNativeRenderPass: 0
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}
@@ -78,19 +77,3 @@ MonoBehaviour:
   m_CopyDepthMode: 0
   m_AccurateGbufferNormals: 0
   m_IntermediateTextureMode: 1
---- !u!114 &8085380893975790015
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7faeb76da3fe61642acc54207c5011a7, type: 3}
-  m_Name: BuildHizMapRenderFeature
-  m_EditorClassIdentifier: 
-  m_Active: 0
-  environmentSettings: {fileID: 11400000, guid: 0bf2482a6e1604945b49eb42fd2083e2,
-    type: 2}
-  computeShader: {fileID: 7200000, guid: 64a963bd9b345304a8df9b7157751501, type: 3}

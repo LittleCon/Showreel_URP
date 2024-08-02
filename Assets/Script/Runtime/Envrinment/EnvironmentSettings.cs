@@ -34,6 +34,7 @@ namespace FC
 
         public float lodJudgeFector = 100;
 
+        public TerrainData terrainData;
         public Texture2D heightMap;
         public float worldSizeScale;
         public RenderTexture hizMap;
