@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.Rendering;
@@ -20,10 +21,11 @@ namespace FC.Terrain
         public uint2 nodeXY;
         public uint2 patchXY;
         public uint LOD;
+        public uint4 transLOD;
 
         public static int GetSize()
         {
-            return sizeof(float) * ( 3 + 3) + sizeof(uint) * (2 + 2 + 1);
+            return sizeof(float) * ( 3 + 3) + sizeof(uint) * (2 + 2 + 1+4);
         }
     }
     public class EnvironmentManagerSystem : BaseMangerSystem<EnvironmentManagerSystem>
@@ -32,6 +34,7 @@ namespace FC.Terrain
         public ComputeShader GPUTerrainCS;
         public bool debugAllNode;
         public bool debugAfterFrustumNode;
+        public bool showCompeleteTerrain;
         public bool debugPatch;
         public TerrainCreateImpl terrainCreateImpl;
         
@@ -43,36 +46,29 @@ namespace FC.Terrain
         private void Start()
         {
             terrainCreateImpl = new TerrainCreateImpl(Camera.main, environmentSettings, GPUTerrainCS);
+     
         }
 
         private void Update()
         {
             terrainCreateImpl.ClearCmd();
-            Profiler.BeginSample("GetCameraPalne");
             terrainCreateImpl.GetCameraPalne();
-            Profiler.EndSample();
-            Profiler.BeginSample("CreateBaseNode");
             terrainCreateImpl.CreateBaseNode();
-            Profiler.EndSample();
-            Profiler.BeginSample("CreateLodNodeList");
             terrainCreateImpl.CreateLodNodeList();
-            Profiler.EndSample();
-            Profiler.BeginSample("CreateNodeLodMap");
             terrainCreateImpl.CreateNodeLodMap();
-            Profiler.EndSample();
-            Profiler.BeginSample("NodeFrustumCull");
-            terrainCreateImpl.NodeFrustumCull();
-            Profiler.EndSample();
-            Profiler.BeginSample("NodeConvertToPatch");
+            if(!showCompeleteTerrain)
+                terrainCreateImpl.NodeFrustumCull();
             terrainCreateImpl.NodeConvertToPatch();
-            Profiler.EndSample();
-            Profiler.BeginSample("HizMapCull");
             terrainCreateImpl.HizMapCull();
-            Profiler.EndSample();
-
             terrainCreateImpl.UpdateTerrainShaderData();
             terrainCreateImpl.DrawTerrainInstance();
             terrainCreateImpl.ExectCmd();
+            terrainCreateImpl.ClearCmd();
+            terrainCreateImpl.DebugBuffer();
+            terrainCreateImpl.ExectCmd();
+
+
+
 
         }
 #if UNITY_EDITOR

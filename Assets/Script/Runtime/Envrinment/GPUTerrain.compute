@@ -48,6 +48,7 @@ uniform int _NodeIndexs[10];
 uniform uint _CurrentLOD;
 RWTexture2D<float> _SectorLODMap;
 RWBuffer<uint>_NodeBrunchList;
+int NoHizCull;
 
 //HizCull
 uniform float4x4 _VPMatrix;

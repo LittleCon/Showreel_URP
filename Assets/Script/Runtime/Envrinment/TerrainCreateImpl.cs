@@ -5,6 +5,7 @@ using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.UIElements;
 
 namespace FC.Terrain{
     public class TerrainCreateImpl 
@@ -20,7 +21,7 @@ namespace FC.Terrain{
         private Vector4[] globalValue = new Vector4[10];
         private Matrix4x4 projcetMatrix;
         private Matrix4x4 vpMatrix;
-        private Mesh terrainMesh;
+        public Mesh terrainMesh;
         private Material terrainMat;
         private Bounds worldBound;
 
@@ -162,20 +163,19 @@ namespace FC.Terrain{
         /// <param name="size">网格大小</param>
         /// <param name="gridNum">网格顶点数(奇数)</param>
         /// <returns></returns>
-        private Mesh CreateQuadMesh(Vector2 size,Vector2Int gridNum) 
+        public Mesh CreateQuadMesh(Vector2 size, Vector2Int gridNum)
         {
             Mesh mesh = new Mesh();
-            //最小四边形的大小(一个四边形=两个三角形）
-            Vector2 gridSize = size / (gridNum - Vector2.one);
+            Vector2 grid_size = size / (gridNum - Vector2.one);
+
             Vector3[] vertices = new Vector3[gridNum.x * gridNum.y];
             Vector2[] uvs = new Vector2[gridNum.x * gridNum.y];
-
-            for (int i = 0; i < gridNum.x; i++) 
+            for (int i = 0; i < gridNum.x; i++)
             {
-                for(int j = 0; j < gridNum.y; j++)
+                for (int j = 0; j < gridNum.y; j++)
                 {
-                    float posx = gridSize.x * (i - gridNum.x / 2);
-                    float posz = gridSize.y * (i - gridNum.y / 2);
+                    float posx = grid_size.x * (i - gridNum.x / 2);
+                    float posz = grid_size.y * (j - gridNum.y / 2);
                     Vector3 pos = new Vector3(posx, 0, posz);
                     Vector2 uv = new Vector2(i * 1.0f / (gridNum.x - 1), j * 1.0f / (gridNum.y - 1));
                     vertices[j * gridNum.x + i] = pos;
@@ -185,6 +185,7 @@ namespace FC.Terrain{
             mesh.vertices = vertices;
 
             int[] indexs = new int[(gridNum.x - 1) * (gridNum.y - 1) * 6];
+
             for (int i = 0; i < gridNum.x - 1; i++)
             {
                 for (int j = 0; j < gridNum.y - 1; j++)
@@ -203,6 +204,8 @@ namespace FC.Terrain{
             mesh.triangles = indexs;
             //mesh.uv = uvs;
             mesh.RecalculateNormals();
+
+
             return mesh;
         }
 
@@ -253,6 +256,7 @@ namespace FC.Terrain{
             globalValue[1].x = environmentSettings.maxLodLevel;
             globalValue[1].y = environmentSettings.worldSize;
             globalValue[1].z = (int)environmentSettings.sectorSize;
+            globalValue[1].w = environmentSettings.sectorVertexs;
             globalValue[2].x = environmentSettings.nodeDevidePatch;
             globalValue[2].z = environmentSettings.worldSizeScale;
             globalValue[2].w = environmentSettings.hizMapSize.x;
@@ -408,10 +412,7 @@ namespace FC.Terrain{
             if (EnvironmentManagerSystem.Instance.debugAfterFrustumNode)
             {
                 cmd.CopyCounterValue(appendTempBuffer1, lengthLogBuffer, 0);
-                int[] length = new int[1] { 1 };
-                lengthLogBuffer.GetData(length);
-                debugNodeData = new NodePatchData[length[0]];
-                appendTempBuffer1.GetData(debugNodeData);
+               
             }
 #endif
         }
@@ -422,9 +423,19 @@ namespace FC.Terrain{
         /// </summary>
         public void NodeConvertToPatch() 
         {
+
             cmd.SetBufferCounterValue(appendTempBuffer2, 0);
-            cmd.CopyCounterValue(appendTempBuffer1, dispatchArgs, 0);
-            cmd.SetComputeBufferParam(GPUTerrainCS, nodeConvertToPatchKernelID, ShaderProperties.GPUTerrain.consumeListID, appendTempBuffer1);
+          
+            if (EnvironmentManagerSystem.Instance.showCompeleteTerrain)
+            {
+                cmd.CopyCounterValue(finaPatchlList, dispatchArgs, 0);
+                cmd.SetComputeBufferParam(GPUTerrainCS, nodeConvertToPatchKernelID, ShaderProperties.GPUTerrain.consumeListID, finaPatchlList);
+            }
+            else
+            {
+                cmd.CopyCounterValue(appendTempBuffer1, dispatchArgs, 0);
+                cmd.SetComputeBufferParam(GPUTerrainCS, nodeConvertToPatchKernelID, ShaderProperties.GPUTerrain.consumeListID, appendTempBuffer1);
+            }
             cmd.SetComputeBufferParam(GPUTerrainCS, nodeConvertToPatchKernelID, ShaderProperties.GPUTerrain.appendTempListID, appendTempBuffer2);
             cmd.DispatchCompute(GPUTerrainCS, nodeConvertToPatchKernelID, dispatchArgs, 0);
 #if UNITY_EDITOR
@@ -432,24 +443,19 @@ namespace FC.Terrain{
             {
                 
                 cmd.CopyCounterValue(appendTempBuffer2, lengthLogBuffer, 0);
-                int[] length = new int[1] { 1 };
-                lengthLogBuffer.GetData(length);
-                if (length[0] == 0)
-                    debugNodeData = new NodePatchData[1];
-                else
-                    debugNodeData = new NodePatchData[length[0]];
-                appendTempBuffer2.GetData(debugNodeData);
+               
             }
 #endif
         }
 
         public void HizMapCull() 
         {
-            projcetMatrix = mainCamera.projectionMatrix;
-            projcetMatrix = GL.GetGPUProjectionMatrix(projcetMatrix,false);
-            vpMatrix = projcetMatrix * mainCamera.worldToCameraMatrix;
-            cmd.SetComputeMatrixParam(GPUTerrainCS, ShaderProperties.GPUTerrain.vpMatrixID, vpMatrix);
-
+            Matrix4x4 openGlProjectionMatrix = mainCamera.projectionMatrix;
+            Matrix4x4 platFormProjectionMatrix = GL.GetGPUProjectionMatrix(openGlProjectionMatrix, false);
+            Matrix4x4 worldToCameraMatrix = mainCamera.worldToCameraMatrix;
+            Matrix4x4 VPMatrix = platFormProjectionMatrix * worldToCameraMatrix;
+            cmd.SetComputeMatrixParam(GPUTerrainCS, ShaderProperties.GPUTerrain.vpMatrixID, VPMatrix);
+            cmd.SetComputeIntParam(GPUTerrainCS, "NoHizCull", EnvironmentManagerSystem.Instance.showCompeleteTerrain ? 1 : 0);
             cmd.CopyCounterValue(appendTempBuffer2, dispatchArgs, 0);
             instanceArgsData[1] = 0;
             cmd.SetBufferData(instanceArgsBuffer, instanceArgsData);
@@ -462,8 +468,7 @@ namespace FC.Terrain{
             cmd.SetComputeTextureParam(GPUTerrainCS, hizCullKernelID, ShaderProperties.GPUTerrain.hizMapID, environmentSettings.hizMap);
 
             cmd.DispatchCompute(GPUTerrainCS, hizCullKernelID, dispatchArgs, 0);
-            uint[] length = new uint[5];
-            instanceArgsBuffer.GetData(length);
+            
 
          
         }
@@ -476,12 +481,26 @@ namespace FC.Terrain{
 
         public void DrawTerrainInstance() 
         {
-            uint[] length = new uint[5];
-            instanceArgsBuffer.GetData(length);
+           
             Graphics.DrawMeshInstancedIndirect(terrainMesh, 0, terrainMat, worldBound, instanceArgsBuffer);
            
         }
 
+        public void DebugBuffer() 
+        {
+            if (EnvironmentManagerSystem.Instance.debugPatch)
+            {
+                int[] length = new int[1] { 1 };
+                lengthLogBuffer.GetData(length);
+                if (length[0] == 0)
+                    debugNodeData = new NodePatchData[1];
+                else
+                    debugNodeData = new NodePatchData[length[0]];
+                appendTempBuffer2.GetData(debugNodeData);
+            }
+            uint[] length2 = new uint[5];
+            instanceArgsBuffer.GetData(length2);
+        }
 
         public void OnDisable()
         {
@@ -491,9 +510,10 @@ namespace FC.Terrain{
             if (NodeBrunchList != null) NodeBrunchList.Dispose();
             if (nodeLodIndexBuffer != null) nodeLodIndexBuffer.Dispose();
             if (dispatchArgs != null) dispatchArgs.Dispose();
-            if (lengthLogBuffer != null) lengthLogBuffer.Dispose();
+            if (instanceArgsBuffer != null) instanceArgsBuffer.Dispose();
             if (cmd != null) cmd.Dispose();
-
+            RenderTexture.ReleaseTemporary(environmentSettings.hizMap);
+            RenderTexture.ReleaseTemporary(resultPatchMap);
             RenderTexture.ReleaseTemporary(SectorLODMap);
 #if UNITY_EDITOR
             if (lengthLogBuffer != null) lengthLogBuffer.Dispose();
