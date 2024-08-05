@@ -14,7 +14,6 @@ namespace FC.Terrain{
         //存储每级LOD的Node起始索引
         private EnvironmentSettings environmentSettings;
         private ComputeShader GPUTerrainCS;
-        private int[] nodeLodIndexs;
 
         private Camera mainCamera;
         private Plane[] frustumPalnes = new Plane[6];
@@ -322,9 +321,9 @@ namespace FC.Terrain{
             cmd.SetBufferCounterValue(appendTempBuffer1, 0);
             cmd.SetComputeBufferParam(GPUTerrainCS, createBaseNodeKernelID, ShaderProperties.GPUTerrain.appendTempListID, appendTempBuffer1);
 
-            int maxLodLevel = environmentSettings.maxLodLevel;
-            dispatchArgsData[0] = (uint)maxLodLevel;
-            dispatchArgsData[1] = (uint)maxLodLevel;
+            int baseLodNum = environmentSettings.baseLodNum;
+            dispatchArgsData[0] = (uint)baseLodNum;
+            dispatchArgsData[1] = (uint)baseLodNum;
             dispatchArgsData[2] = 1;
 
             cmd.SetBufferData(dispatchArgs, dispatchArgsData);
@@ -348,14 +347,15 @@ namespace FC.Terrain{
             cmd.SetBufferCounterValue(appendTempBuffer2, 0);
             cmd.SetBufferCounterValue(finaPatchlList, 0);
             cmd.SetBufferCounterValue(NodeBrunchList, 0);
-       
+
             cmd.SetComputeBufferParam(GPUTerrainCS, createPathLODKernelID, ShaderProperties.GPUTerrain.finalPatchListID, finaPatchlList);
             cmd.SetComputeBufferParam(GPUTerrainCS, createPathLODKernelID, ShaderProperties.GPUTerrain.nodeIndexsID, nodeLodIndexBuffer);
             cmd.SetComputeBufferParam(GPUTerrainCS, createPathLODKernelID, ShaderProperties.GPUTerrain.nodeBrunchListID, NodeBrunchList);
             cmd.SetComputeTextureParam(GPUTerrainCS, createPathLODKernelID, ShaderProperties.GPUTerrain.minMaxHeightMapID, environmentSettings.heightMap);
 
+            int baseLodNum = environmentSettings.baseLodNum;
             dispatchArgsData = new uint[3] {
-            (uint)(maxLodLevels*maxLodLevels),1,1
+            (uint)(baseLodNum*baseLodNum),1,1
             };
             cmd.SetBufferData(dispatchArgs, dispatchArgsData);
             for (int i = maxLodLevels; i >= 0; i--)
@@ -376,14 +376,9 @@ namespace FC.Terrain{
             {
 
                 cmd.CopyCounterValue(finaPatchlList, lengthLogBuffer, 0);
-                int[] length = new int[1] {1};
-                lengthLogBuffer.GetData(length);
-                debugNodeData = new NodePatchData[length[0]];
-                finaPatchlList.GetData(debugNodeData);
             }
 #endif
         }
-
         /// <summary>
         /// 为finalList中所有Node创建一个Tex记录其Lod信息
         /// </summary>
@@ -487,7 +482,15 @@ namespace FC.Terrain{
 
         public void DebugBuffer() 
         {
-            if (EnvironmentManagerSystem.Instance.debugPatch)
+#if UNITY_EDITOR
+            if (EnvironmentManagerSystem.Instance.debugAllNode)
+            {
+
+                int[] length = new int[1] { 1 };
+                lengthLogBuffer.GetData(length);
+                debugNodeData = new NodePatchData[length[0]];
+                finaPatchlList.GetData(debugNodeData);
+            }else if (EnvironmentManagerSystem.Instance.debugPatch)
             {
                 int[] length = new int[1] { 1 };
                 lengthLogBuffer.GetData(length);
@@ -499,6 +502,7 @@ namespace FC.Terrain{
             }
             uint[] length2 = new uint[5];
             instanceArgsBuffer.GetData(length2);
+#endif
         }
 
         public void OnDisable()

@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06c31044fa12d964aaac96c609fb6d30, type: 3}
+  m_Name: CustomEnvironment
+  m_EditorClassIdentifier: 
+  worldSize: 512
+  nodeDevidePatch: 8
+  sectorVertexs: 17
+  maxLodLevel: 3
+  baseLodNum: 4
+  lodJudgeFector: 50
+  terrainData: {fileID: 15600000, guid: 48c95faa1c03d3647a97e9b1a1994860, type: 2}
+  heightMap: {fileID: 2800000, guid: 8617a3a80fd02dd46a654e49cdee897e, type: 3}
+  worldSizeScale: 120
+  hizMap: {fileID: 0}
+  hizMapSize: {x: 2048, y: 1024}
+  terrainMat: {fileID: 2100000, guid: 1ed74edb413e1f548a503f257a9878ae, type: 2}

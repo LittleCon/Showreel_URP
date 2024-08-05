@@ -37,8 +37,13 @@ public class DrawCube : MonoBehaviour
                 var mark = marks[i];
 
                 var center = GetNodeCenterPos(data, (int)data.LOD);
-
-                if (EnvironmentManagerSystem.Instance.debugAfterFrustumNode)
+                if (EnvironmentManagerSystem.Instance.debugAllNode)
+                {
+                    mark.transform.position = new Vector3(center.x, 0, center.y);
+                    mark.transform.localScale = terrainCreateImpl.GetNodeSizeInLod((int)data.LOD) * Vector3.one * 0.1f;
+                    mark.transform.Find("index").GetComponent<TextMeshPro>().text = $"({data.nodeXY.x},{data.nodeXY.y})";
+                }
+                else if (EnvironmentManagerSystem.Instance.debugAfterFrustumNode)
                 {
                    
                     mark.transform.localScale = terrainCreateImpl.GetNodeSizeInLod((int)data.LOD) * Vector3.one * 0.1f;
@@ -80,7 +85,7 @@ public class DrawCube : MonoBehaviour
         return nodePos;
     }
 
-    
+    private Color[] lodColors = new Color[] { Color.red, Color.yellow, Color.blue, Color.green, Color.cyan, Color.white };
 
     public void OnDrawGizmos()
     {
@@ -89,6 +94,7 @@ public class DrawCube : MonoBehaviour
         {
             foreach (var data in terrainCreateImpl.debugNodeData)
             {
+                Gizmos.color = lodColors[data.LOD];
                 var center = GetNodeCenterPos(data, (int)data.LOD);
                 var bounds = data.boundsMax - data.boundsMin;
                 bounds.y = 100;

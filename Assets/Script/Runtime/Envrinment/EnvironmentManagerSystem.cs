@@ -62,9 +62,13 @@ namespace FC.Terrain
             terrainCreateImpl.UpdateTerrainShaderData();
             terrainCreateImpl.DrawTerrainInstance();
             terrainCreateImpl.ExectCmd();
-            //terrainCreateImpl.ClearCmd();
-            //terrainCreateImpl.DebugBuffer();
-            //terrainCreateImpl.ExectCmd();
+            if (debug)
+            {
+                terrainCreateImpl.ClearCmd();
+                terrainCreateImpl.DebugBuffer();
+                terrainCreateImpl.ExectCmd();
+            }
+
         }
 #if UNITY_EDITOR
         public bool debug => debugAfterFrustumNode | debugAllNode|| debugPatch;

@@ -4,17 +4,6 @@ using UnityEngine;
 
 namespace FC
 {
-    public enum SectorSize 
-    {
-        _2=2,
-        _4=4,
-        _8=8,
-        _16=16,
-        _32=32
-
-    }
-
-    
 
     [CreateAssetMenu(menuName ="Environment/CreateSettings",fileName ="EnvironmentSettings")]
     public class EnvironmentSettings : ScriptableObject
@@ -28,13 +17,14 @@ namespace FC
 
         public int sectorVertexs = 17;
 
-        public SectorSize sectorSize =SectorSize._8;
+        public int sectorSize =>worldSize/((1 << maxLodLevel) * nodeDevidePatch*baseLodNum);
 
         public int maxLodLevel = 5;
 
+        public int baseLodNum = 5;
+
         public float lodJudgeFector = 100;
 
-        public TerrainData terrainData;
         public Texture2D heightMap;
         public float worldSizeScale;
         public RenderTexture hizMap;
