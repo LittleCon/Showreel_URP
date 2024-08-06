@@ -12,15 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 06c31044fa12d964aaac96c609fb6d30, type: 3}
   m_Name: CustomEnvironment
   m_EditorClassIdentifier: 
-  worldSize: 512
+  worldSize: 2560
   nodeDevidePatch: 8
   sectorVertexs: 17
-  maxLodLevel: 3
-  baseLodNum: 4
-  lodJudgeFector: 50
-  terrainData: {fileID: 15600000, guid: 48c95faa1c03d3647a97e9b1a1994860, type: 2}
-  heightMap: {fileID: 2800000, guid: 8617a3a80fd02dd46a654e49cdee897e, type: 3}
-  worldSizeScale: 120
+  maxLodLevel: 4
+  baseLodNum: 5
+  lodJudgeFector: 100
+  heightMap: {fileID: 2800000, guid: 2c66f914c14e8a3498686c9b995c1372, type: 2}
+  worldSizeScale: 600
   hizMap: {fileID: 0}
   hizMapSize: {x: 2048, y: 1024}
-  terrainMat: {fileID: 2100000, guid: 1ed74edb413e1f548a503f257a9878ae, type: 2}
+  terrainMat: {fileID: 2100000, guid: 7b2a75f9c7709d547835737bfd350a27, type: 2}
