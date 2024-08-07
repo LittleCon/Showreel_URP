@@ -24,13 +24,21 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _MainTex:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: dffef66376be4fa480fb02b19edbe903, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _BezierT: 0.5
-    - _P1Flexibility: 1
-    - _P2Flexibility: 1
+    - _BezierT: 0.425
+    - _P1Flexibility: 0.48
+    - _P2Flexibility: 0.6
+    - _PushTipOscillationForward: 1.13
+    - _SinOffsetRange: -1
+    - _TaperAmount: 1.03
+    - _WaveAmplitude: 70.6
+    - _WavePower: 156
+    - _WaveSpeed: 71.68
+    - _WeightP1: 0.33
+    - _WindControl: 1
     m_Colors: []
   m_BuildTextureStacks: []

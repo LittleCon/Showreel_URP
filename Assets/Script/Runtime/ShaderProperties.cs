@@ -31,4 +31,13 @@ public static class ShaderProperties
         public static int hizMap2ID = Shader.PropertyToID("HIZ_MAP_Mip2");
         public static int hizMap3ID = Shader.PropertyToID("HIZ_MAP_Mip3");
     }
+
+    public struct Grass
+    {
+        public static int vertexPosBuffer = Shader.PropertyToID("_VertexPosBuffer");
+        public static int vertexColorsBuffer = Shader.PropertyToID("_VertexColorsBuffer");
+        public static int vertexUVsBuffer = Shader.PropertyToID("_VertexUVsBuffer");
+        public static int vertexIndexBuffer = Shader.PropertyToID("_VertexIndexBuffer");
+        public static int grassBladeBuffer = Shader.PropertyToID("_GrassBladeBuffer");
+    }
 }

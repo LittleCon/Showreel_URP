@@ -445,11 +445,9 @@ namespace FC.Terrain{
 
         public void HizMapCull() 
         {
-            Matrix4x4 openGlProjectionMatrix = mainCamera.projectionMatrix;
-            Matrix4x4 platFormProjectionMatrix = GL.GetGPUProjectionMatrix(openGlProjectionMatrix, false);
-            Matrix4x4 worldToCameraMatrix = mainCamera.worldToCameraMatrix;
-            Matrix4x4 VPMatrix = platFormProjectionMatrix * worldToCameraMatrix;
-            cmd.SetComputeMatrixParam(GPUTerrainCS, ShaderProperties.GPUTerrain.vpMatrixID, VPMatrix);
+            projcetMatrix = GL.GetGPUProjectionMatrix(mainCamera.projectionMatrix, false);
+            vpMatrix = projcetMatrix * mainCamera.worldToCameraMatrix;
+            cmd.SetComputeMatrixParam(GPUTerrainCS, ShaderProperties.GPUTerrain.vpMatrixID, vpMatrix);
             cmd.CopyCounterValue(appendTempBuffer2, dispatchArgs, 0);
             instanceArgsData[1] = 0;
             cmd.SetBufferData(instanceArgsBuffer, instanceArgsData);
