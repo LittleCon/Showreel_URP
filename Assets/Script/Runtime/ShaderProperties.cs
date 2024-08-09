@@ -39,5 +39,11 @@ public static class ShaderProperties
         public static int vertexUVsBuffer = Shader.PropertyToID("_VertexUVsBuffer");
         public static int vertexIndexBuffer = Shader.PropertyToID("_VertexIndexBuffer");
         public static int grassBladeBuffer = Shader.PropertyToID("_GrassBladeBuffer");
+        public static int grassMaskSplatMapID = Shader.PropertyToID("_GrassMaskSplatMap");
+        public static int jitterStrengthID = Shader.PropertyToID("_JitterStrength");
+        public static int patchGrassNumsID = Shader.PropertyToID("_PatchGrassNums");
+        public static int clumpScaleID = Shader.PropertyToID("_ClumpScale");
+        public static int clumpParametersID = Shader.PropertyToID("_ClumpParameters");
+
     }
 }

@@ -1,18 +1,20 @@
-using System.Collections;
-using System.Collections.Generic;
-using Unity.Mathematics;
 using UnityEngine;
-using static UnityEngine.Mesh;
+using UnityEngine.Rendering;
 
 namespace FC.Terrain
 {
-    public class GrassGenerate : MonoBehaviour
+    public class GrassGenerate 
     {
         //lod0的草网格
-        public Mesh grassMesh;
+        public Mesh grassMesh=>environmentSettings.grassMesh;
 
-        public Material grassMat;
+        public Material grassMat=>environmentSettings.grassMat;
 
+        public Texture grassSplatMap=>environmentSettings.grassSplatMap;
+
+        private EnvironmentSettings environmentSettings;
+        private ComputeShader grassCS;
+        private int generateGrassDataKernelID;
         #region ComputeBuffer及对应数据
         /// <summary>
         /// 模型顶点色Buffer
@@ -50,6 +52,9 @@ namespace FC.Terrain
 
         private ComputeBuffer grassBladeBuffer;
         private GrassBlade[] grassBlades;
+
+        private ComputeBuffer clumpParamtersBuffer;
+        private ClumpParametersStruct []clumpParametersStruct;
         #endregion
         struct GrassBlade
         {
@@ -74,19 +79,12 @@ namespace FC.Terrain
         };
 
         
-        private void Start()
+        public GrassGenerate(EnvironmentSettings environmentSettings)
         {
-            TestData();
-            InitBuffer();
+            this.environmentSettings = environmentSettings;
+            grassCS = environmentSettings.grassCS;
         }
 
-        private void TestData()
-        {
-            grassBlades = new GrassBlade[1];
-            var grassBlade = new GrassBlade() { position=Vector3.zero,windStrength=1,hash=0.25f,height=0.8f,width=0.05f,tile=0.95f,bend=0.4f};
-            grassBlades[0] = grassBlade;
-            
-        }
 
         public void InitBuffer()
         {
@@ -109,22 +107,33 @@ namespace FC.Terrain
             instanceBuffer = new ComputeBuffer(4, sizeof(int), ComputeBufferType.IndirectArguments);
             instanceBuffer.SetData(new int[] { trainglesBuffer.count, 1, 0, 0 });
 
-            grassBladeBuffer = new ComputeBuffer(grassBlades.Length, GrassBlade.GetSize());
-            grassBladeBuffer.SetData(grassBlades);
+            //grassBladeBuffer = new ComputeBuffer(environmentSettings.grassNums, GrassBlade.GetSize(),ComputeBufferType.Append);
 
             grassMat.SetBuffer(ShaderProperties.Grass.vertexPosBuffer, vertexPosBuffer);
             grassMat.SetBuffer(ShaderProperties.Grass.vertexColorsBuffer, vertexColorsBuffer);
             grassMat.SetBuffer(ShaderProperties.Grass.vertexIndexBuffer, trainglesBuffer);
             grassMat.SetBuffer(ShaderProperties.Grass.vertexUVsBuffer, uvsBuffer);
             grassMat.SetBuffer(ShaderProperties.Grass.grassBladeBuffer, grassBladeBuffer);
+
+            clumpParametersStruct = environmentSettings.clumpParametersStructs.ToArray();
+            clumpParamtersBuffer = new ComputeBuffer(clumpParamtersBuffer.count, ClumpParametersStruct.GetSize());
+            clumpParamtersBuffer.SetData(clumpParametersStruct);
+            generateGrassDataKernelID = grassCS.FindKernel("GenerateGrassData");
         }
 
-        private void Update()
+        private void DrawGrass(CommandBuffer cmd,ComputeBuffer patchBuffer)
         {
+
+            cmd.SetComputeBufferParam(grassCS, generateGrassDataKernelID, ShaderProperties.GPUTerrain.consumeListID, patchBuffer);
+            cmd.SetComputeBufferParam(grassCS, generateGrassDataKernelID, ShaderProperties.Grass.grassBladeBuffer, grassBladeBuffer);
+            cmd.SetComputeBufferParam(grassCS, generateGrassDataKernelID, ShaderProperties.Grass.clumpParametersID, clumpParamtersBuffer);
+            cmd.SetComputeIntParam(grassCS,  ShaderProperties.Grass.patchGrassNumsID, environmentSettings.perPatchGrassNums);
+            cmd.SetComputeFloatParam(grassCS, ShaderProperties.Grass.jitterStrengthID, environmentSettings.jitterStrength);
+            cmd.SetComputeFloatParam(grassCS, ShaderProperties.Grass.clumpScaleID, environmentSettings.clumpScale);
             Graphics.DrawProceduralIndirect(grassMat, new Bounds(Vector3.zero, Vector3.one * 100), MeshTopology.Triangles, instanceBuffer);
         }
 
-        private void OnDestroy()
+        public void Dispose()
         {
             vertexColorsBuffer.Dispose();
             vertexPosBuffer.Dispose();

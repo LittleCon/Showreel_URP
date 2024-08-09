@@ -53,6 +53,17 @@ namespace FC.Terrain
 
         private void Update()
         {
+            RenderTerrain();
+            if (true)
+            {
+                terrainCreateImpl.ClearCmd();
+                terrainCreateImpl.DebugBuffer();
+                terrainCreateImpl.ExectCmd();
+            }
+
+        }
+        void RenderTerrain()
+        {
             terrainCreateImpl.ClearCmd();
             terrainCreateImpl.SetKeyWorld();
             terrainCreateImpl.GetCameraPalne();
@@ -64,14 +75,8 @@ namespace FC.Terrain
             terrainCreateImpl.HizMapCull();
             terrainCreateImpl.UpdateTerrainShaderData();
             terrainCreateImpl.DrawTerrainInstance();
+            terrainCreateImpl.GrassPatchFilter();
             terrainCreateImpl.ExectCmd();
-            if (debug)
-            {
-                terrainCreateImpl.ClearCmd();
-                terrainCreateImpl.DebugBuffer();
-                terrainCreateImpl.ExectCmd();
-            }
-
         }
 #if UNITY_EDITOR
         public bool debug => debugAfterFrustumNode | debugAllNode|| debugPatch;

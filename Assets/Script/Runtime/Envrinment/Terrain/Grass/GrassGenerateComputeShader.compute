@@ -1,0 +1,81 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel  GenerateGrassData
+
+#include "../../Terrain/TerrainDataStructDefine.hlsl"
+#include"../../Terrain/GPUTerrainFunc.hlsl"
+#include "../../../../../Shader/Common/Math.hlsl"
+
+StructuredBuffer<NodePatchData> _ConsumeList;
+AppendStructuredBuffer<GrassBlade> _GrassBladeBuffer;
+StructuredBuffer<ClumpParametersStruct>_ClumpParameters;
+
+
+Texture2D<float2>_MinMaxHeightMap;
+SamplerState samplerHeightMap;
+Texture2D<float4>_ClumpTex;
+SamplerState samplerClumpTex;
+Texture2D<float4>_GrassSplatMap;
+uniform float4 _GlobalValues[10];
+uint _PatchGrassNums;
+float _JitterStrength;
+float _ClumpScale;
+float _HeightMapMultiplier;
+
+float3 getTransformedVertex(BaseData baseData,float3 vertex) {
+
+    float2 worldUV = vertex.xz;
+
+    worldUV = worldUV / baseData.worldSize + 0.5;
+
+    float height = _MinMaxHeightMap.SampleLevel(samplerHeightMap, worldUV, 0).x;
+    vertex.y += height * _HeightMapMultiplier;
+
+    return vertex;
+
+}
+
+
+[numthreads(8, 8, 1)]
+void GenerateGrassData(uint3 id:SV_DispatchThreadID,  uint3 groupID : SV_GroupID) {
+
+    NodePatchData patchData = _ConsumeList[groupID.z];
+    BaseData baseData = GenerateBaseData(_GlobalValues);
+    float patchSize = GetPatchSizeInLod(baseData, patchData.LOD);
+    float density = _PatchGrassNums/ patchSize * patchSize;
+    float2 nodePos = GetNodeCenterPos(baseData, patchData);
+    float2 patchPosInNode = GetPatchPosInNode(baseData, patchData.patchXY, patchData.LOD);
+
+    float2 patchPos = nodePos + patchPosInNode;
+    float3 position = float3(id.x, 0, id.y)/ density- float3(patchPos.x,0,patchPos.y);
+
+    float2 hash = Jitter(id.xy);
+    float2 jitter = (hash * 2 - 1) * _JitterStrength;
+
+    position.xz += jitter;
+
+
+    //get patch GrassBaseData
+    float2 clumpUV = position.xz * float2(_ClumpScale.xx);
+    float3 clumpData = _ClumpTex.SampleLevel(samplerClumpTex, clumpUV, 0).xyz;
+
+    float clumpParamIndex = clumpData.x;
+    ClumpParametersStruct bladeParameters = _ClumpParameters[int(clumpParamIndex)];
+
+    float2 clumpCentre = (clumpData.yz + floor(clumpUV)) / float2(_ClumpScale.xx);
+    position.xz = lerp(position.xz, clumpCentre, bladeParameters.pullToCentre);
+    float3 raisedVertex = getTransformedVertex(baseData,position);
+
+    GrassBlade blade;
+    blade.position = raisedVertex;
+    blade.rotAngle = 0;
+    blade.hash = rand(id.xyx);
+    blade.height = bladeParameters.baseHeight+ remap01_neg11(rand(id.xxy));
+    blade.width = bladeParameters.baseWidth + remap01_neg11(rand(id.xxy));
+    blade.tilt = bladeParameters.baseTilt + remap01_neg11(rand(id.xyx * float3(1.12, 3.3, 17.6))) ;
+    blade.bend = bladeParameters.baseBend + remap01_neg11(rand(id.xyy * float3(12.32, 0.23, 3.39))) ;
+
+    blade.surfaceNorm = 0;
+
+
+    _GrassBladeBuffer.Append(blade);
+}

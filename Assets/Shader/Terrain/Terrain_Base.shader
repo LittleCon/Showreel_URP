@@ -125,6 +125,10 @@ Shader "FC/Terrain_Base"
             {
                 // sample the texture
                 float4 col = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap,i.uv);
+                float splatMask = SAMPLE_TEXTURE2D_LOD(_HeightMap, sampler_HeightMap, i.uv, 0).x;
+                if (splatMask < 0.05) {
+                    return float4(1, 1, 1, 1);
+                }
                 return col;
             }
             ENDHLSL

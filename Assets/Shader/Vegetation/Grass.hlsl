@@ -44,6 +44,7 @@ float _WavePower;
 float _SinOffsetRange;
 float _PushTipOscillationForward;
 float _TaperAmount;
+float _CurvedNormalAmount;
 CBUFFER_END
 TEXTURE2D(_MainTex);
 SAMPLER(sampler_MainTex);
@@ -77,6 +78,24 @@ void ApplyWind(GrassBlade grassBlade, float3 bezCtrlOffsetDir,inout float3 p2,in
     p3 += bezCtrlOffsetDir * p3Offset;
 }
 
+inline float3 BezierTangent(float3 p0, float3 p1, float3 p2, float3 p3, float t) {
+    float omt = 1 - t;
+    float omt2 = omt * omt;
+    float t2 = t * t;
+    float3 tangent =
+        p0 * (-3 * omt2) +
+        p1 * (3 * omt2 - 6 * omt * t) +
+        p2 * (6 * omt * t - 3 * t2) +
+        p3 * (3 * t2);
+
+    return normalize(tangent);
+}
+
+inline float3 BezierNormal(float3 bezierTangent) {
+    
+    return normalize(cross(bezierTangent, float3(0, 0, 1)));
+}
+
 Varyings vert(uint vertexID:SV_VertexID, uint instanceID : SV_InstanceID)
 {
     Varyings output;
@@ -102,17 +121,35 @@ Varyings vert(uint vertexID:SV_VertexID, uint instanceID : SV_InstanceID)
     GenerateBezierControlPos(grassBlade, bezierT, bezCtrlOffsetDir,p1,p2,p3);
     ApplyWind(grassBlade, bezCtrlOffsetDir, p2, p3);
 
-    p0 = 0;
-    //各个顶点的贝塞尔偏移
-    float3 bezierOffset = cubicBezier(p0, p1, p2, p3, bezierT);
+    //各个顶点的贝塞尔偏移,此时Offset还是xy平面上的，z方向还没有值
+    float3 bezierOffset = CubicBezier(p0, p1, p2, p3, bezierT);
+    float3 midPoint = bezierOffset;
 
+    //各顶点均在贝塞尔曲线上，因此对贝塞尔曲线求导即可得到顶点的切线
+    //normal和tangent目前都是(x,y,0)形式，z方向需要通过拉伸长度来补充
+    float3 bezierTangent =BezierTangent(p0, p1, p2, p3, bezierT);
+    float3 bezierNormal = BezierNormal(bezierTangent);
 
+    bezierNormal.z = side * pow(_CurvedNormalAmount, 1);
+    bezierNormal = normalize(bezierNormal);
 
+    //草的z方向拉伸宽度。草的宽度=基础宽度*（1-贝塞尔T*系数）
+    float width = grassBlade.width * (1 - _TaperAmount * bezierT);
+
+    float3 positionOffset = float3(bezierOffset.xy, bezierOffset.z+width * side);
     
-    float width = (grassBlade.width) * (1 - _TaperAmount * bezierT);
-    newPos.z += side * width;
-    output.positionCS = mul(UNITY_MATRIX_MVP, float4(positionOS+ bezierOffset, 1));
-    output.color = bezCtrlOffsetDir;
+    //构建草的旋转矩阵，用于实现每棵草的朝向不同
+    float3x3 rotMat = AngleAxis3x3(-grassBlade.rotAngle, float3(0, 1, 0));
+
+
+    positionOffset = mul(rotMat, positionOffset);
+    bezierNormal = mul(rotMat, bezierNormal);
+    float3 positionWS = positionOffset + grassBlade.position;
+
+
+
+    output.positionCS = mul(UNITY_MATRIX_VP, float4(positionWS + positionOS, 1));
+    output.color = bezierT;
     return output;
 }
 

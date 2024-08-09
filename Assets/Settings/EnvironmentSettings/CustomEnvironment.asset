@@ -23,3 +23,54 @@ MonoBehaviour:
   hizMap: {fileID: 0}
   hizMapSize: {x: 2048, y: 1024}
   terrainMat: {fileID: 2100000, guid: 7b2a75f9c7709d547835737bfd350a27, type: 2}
+  grassCS: {fileID: 0}
+  grassMesh: {fileID: 8254687373856176130, guid: 54e72127e5e654b44bff508df765e8e7,
+    type: 3}
+  grassMat: {fileID: 2100000, guid: 575baafc4cb78c54fbe6ff44ce5f1e74, type: 2}
+  grassSplatMap: {fileID: 2800000, guid: 2c66f914c14e8a3498686c9b995c1372, type: 2}
+  perPatchGrassNums: 0
+  grassChunkCount: 8
+  grassStyleCount: 4
+  clumpScale: 0
+  jitterStrength: 0
+  clumpParametersStructs:
+  - pullToCentre: 0.1
+    pointInSameDirection: 0
+    baseHeight: 0.8
+    heightRandom: 0.1
+    baseWidth: 0.01
+    widthRandom: 0.02
+    baseTilt: 0.6
+    tiltRandom: 0.2
+    baseBend: 0.1
+    bendRandom: 0.05
+  - pullToCentre: 0.1
+    pointInSameDirection: 0
+    baseHeight: 0.8
+    heightRandom: 0.1
+    baseWidth: 0.02
+    widthRandom: 0.01
+    baseTilt: 0.8
+    tiltRandom: 0.3
+    baseBend: 0.1
+    bendRandom: 0.05
+  - pullToCentre: 0.1
+    pointInSameDirection: 0
+    baseHeight: 0.8
+    heightRandom: 0.1
+    baseWidth: 0.02
+    widthRandom: 0.01
+    baseTilt: 0.4
+    tiltRandom: 0.1
+    baseBend: 0.1
+    bendRandom: 0.05
+  - pullToCentre: 0.3
+    pointInSameDirection: 0.5
+    baseHeight: 1.8
+    heightRandom: 0.1
+    baseWidth: 0.02
+    widthRandom: 0.01
+    baseTilt: 0.7
+    tiltRandom: 0.2
+    baseBend: 0.3
+    bendRandom: 0.1

@@ -6,6 +6,7 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UIElements;
+using static Unity.Burst.Intrinsics.X86.Avx;
 
 namespace FC.Terrain{
     public class TerrainCreateImpl 
@@ -14,7 +15,8 @@ namespace FC.Terrain{
         //存储每级LOD的Node起始索引
         private EnvironmentSettings environmentSettings;
         private ComputeShader GPUTerrainCS;
-
+        //草地渲染
+        private GrassGenerate grassGenerater;
         private Camera mainCamera;
         private Plane[] frustumPalnes = new Plane[6];
         private Vector4[] globalValue = new Vector4[10];
@@ -36,6 +38,7 @@ namespace FC.Terrain{
         private int frustumCullKernelID;
         private int nodeConvertToPatchKernelID;
         private int hizCullKernelID;
+        private int GrassPatchFilterKernelID;
         #endregion
 
         #region ComputeBuffer
@@ -111,9 +114,13 @@ namespace FC.Terrain{
             mainCamera = camera;
             this.environmentSettings = environmentSettings;
             GPUTerrainCS = computeShader;
+            terrainMat = environmentSettings.terrainMat;
+
+            grassGenerater = new GrassGenerate(environmentSettings);
+
             InitKernelIndex();
             InitBuffer();
-            terrainMat = environmentSettings.terrainMat;
+
         }
 
         /// <summary>
@@ -144,6 +151,7 @@ namespace FC.Terrain{
             frustumCullKernelID = GPUTerrainCS.FindKernel("FrustumCull");
             nodeConvertToPatchKernelID = GPUTerrainCS.FindKernel("NodeConvertToPatch");
             hizCullKernelID = GPUTerrainCS.FindKernel("HizCull");
+            GrassPatchFilterKernelID = GPUTerrainCS.FindKernel("GrassPatchFilter");
         }
         public int GetNodeIndexOffset(int LOD)
         {
@@ -286,6 +294,10 @@ namespace FC.Terrain{
 #if UNITY_EDITOR
             lengthLogBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.IndirectArguments);
 #endif
+
+
+
+            grassGenerater.InitBuffer();
         }
 
         public void GetCameraPalne()
@@ -459,10 +471,22 @@ namespace FC.Terrain{
             cmd.SetComputeTextureParam(GPUTerrainCS, hizCullKernelID, ShaderProperties.GPUTerrain.sectorLODMapID, SectorLODMap);
             cmd.SetComputeTextureParam(GPUTerrainCS, hizCullKernelID, ShaderProperties.GPUTerrain.hizMapID, environmentSettings.hizMap);
 
+            //草渲染
+            cmd.SetBufferCounterValue(appendTempBuffer1, 0);
+            cmd.SetComputeBufferParam(GPUTerrainCS, hizCullKernelID, ShaderProperties.GPUTerrain.appendTempListID, appendTempBuffer1);
+
             cmd.DispatchCompute(GPUTerrainCS, hizCullKernelID, dispatchArgs, 0);
             
+        }
 
-         
+        public void GrassPatchFilter()
+        {
+            cmd.SetComputeBufferParam(GPUTerrainCS, GrassPatchFilterKernelID, ShaderProperties.GPUTerrain.consumeListID, appendTempBuffer1);
+            cmd.SetBufferCounterValue(appendTempBuffer2, 0);
+            cmd.SetComputeBufferParam(GPUTerrainCS, GrassPatchFilterKernelID, ShaderProperties.GPUTerrain.appendTempListID, appendTempBuffer2);
+            cmd.SetComputeTextureParam(GPUTerrainCS, GrassPatchFilterKernelID, ShaderProperties.Grass.grassMaskSplatMapID, environmentSettings.grassSplatMap);
+            cmd.CopyCounterValue(instanceArgsBuffer, dispatchArgs, 0);
+            cmd.DispatchCompute(GPUTerrainCS, GrassPatchFilterKernelID, dispatchArgs, 0);
         }
 
         public void SetKeyWorld()
@@ -491,6 +515,10 @@ namespace FC.Terrain{
 
         public void DebugBuffer() 
         {
+            cmd.CopyCounterValue(appendTempBuffer2, lengthLogBuffer,0);
+            int[] length3 = new int[1] { 1 };
+            lengthLogBuffer.GetData(length3);
+
 #if UNITY_EDITOR
             if (EnvironmentManagerSystem.Instance.debugAllNode)
             {
@@ -527,6 +555,9 @@ namespace FC.Terrain{
             RenderTexture.ReleaseTemporary(environmentSettings.hizMap);
             RenderTexture.ReleaseTemporary(resultPatchMap);
             RenderTexture.ReleaseTemporary(SectorLODMap);
+
+            //Grass
+            grassGenerater.Dispose();
 #if UNITY_EDITOR
             if (lengthLogBuffer != null) lengthLogBuffer.Dispose();
 #endif

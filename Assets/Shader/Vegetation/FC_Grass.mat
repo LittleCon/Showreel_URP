@@ -30,15 +30,16 @@ Material:
     m_Ints: []
     m_Floats:
     - _BezierT: 0.425
-    - _P1Flexibility: 0.48
-    - _P2Flexibility: 0.6
-    - _PushTipOscillationForward: 1.13
-    - _SinOffsetRange: -1
-    - _TaperAmount: 1.03
-    - _WaveAmplitude: 70.6
-    - _WavePower: 156
-    - _WaveSpeed: 71.68
-    - _WeightP1: 0.33
+    - _CurvedNormalAmount: 7.73
+    - _P1Flexibility: 0.2
+    - _P2Flexibility: 0.08
+    - _PushTipOscillationForward: 1
+    - _SinOffsetRange: -9.7
+    - _TaperAmount: 0.91
+    - _WaveAmplitude: 9.01
+    - _WavePower: 0.82
+    - _WaveSpeed: 1.1
+    - _WeightP1: 0.176
     - _WindControl: 1
     m_Colors: []
   m_BuildTextureStacks: []

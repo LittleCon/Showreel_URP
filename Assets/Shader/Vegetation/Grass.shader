@@ -14,7 +14,8 @@ Shader "FC/Grass"
         _WavePower("WavePower",Float) = 3
         _SinOffsetRange("SinOffsetRange",Float) = 5
         _PushTipOscillationForward("PushTipOscillationForward",Float) = 1
-        _TaperAmount("TaperAmount",Float) = 0.8
+        _TaperAmount("宽度拉伸范围",Range(0,1)) = 0.8
+        _CurvedNormalAmount("法线扰动",Float)=0.5
     }
     SubShader
     {
