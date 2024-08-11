@@ -297,7 +297,7 @@ namespace FC.Terrain{
 
 
 
-            grassGenerater.InitBuffer();
+            //grassGenerater.InitBuffer();
         }
 
         public void GetCameraPalne()
@@ -557,7 +557,7 @@ namespace FC.Terrain{
             RenderTexture.ReleaseTemporary(SectorLODMap);
 
             //Grass
-            grassGenerater.Dispose();
+           // grassGenerater.Dispose();
 #if UNITY_EDITOR
             if (lengthLogBuffer != null) lengthLogBuffer.Dispose();
 #endif

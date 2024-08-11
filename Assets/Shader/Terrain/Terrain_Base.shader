@@ -3,8 +3,10 @@ Shader "FC/Terrain_Base"
     Properties
     {
         _BaseMap ("Texture", 2D) = "white" {}
+        _NormalMap("NormalMap",2D) = "white"{}
         _HeightMap("HeightMap", 2D) = "white" {}
         _ResultPatchMap("_RenderPatchMap",2D) = "white"{}
+        _SplatMap ("SplatMap",2D)= "white"{}
     }
     SubShader
     {
@@ -43,7 +45,8 @@ Shader "FC/Terrain_Base"
             {
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
-                float3 normalWS:TEXCOORD1;
+                float3 positionWS:TEXCOORD1;
+                float2 normalUV:TEXCOORD2;
             };
 
             struct BaseData {
@@ -64,7 +67,11 @@ Shader "FC/Terrain_Base"
             CBUFFER_START(TERRAIN)
                 float4 _BaseMap_ST;
             CBUFFER_END
-
+            
+            TEXTURE2D(_SplatMap);
+            SAMPLER(sampler_SplatMap);
+            TEXTURE2D(_NormalMap);
+            SAMPLER(sampler_NormalMap);
             TEXTURE2D(_ResultPatchMap);
             SAMPLER(sampler_ResultPatchMap);
             TEXTURE2D(_HeightMap);
@@ -116,20 +123,30 @@ Shader "FC/Terrain_Base"
                 VertexNormalInputs normalInput = GetVertexNormalInputs(input.normalOS, input.tangentOS);
 
                 output.positionCS = vertexInput.positionCS;
-                output.normalWS = normalInput.normalWS;
                 output.uv = TRANSFORM_TEX(terrainUV,_BaseMap);
+                output.normalUV=terrainUV;
+                output.positionWS = vertexInput.positionWS;
                 return output;
             }
 
-            float4 frag (Varyings i) : SV_Target
+            float4 frag (Varyings input) : SV_Target
             {
                 // sample the texture
-                float4 col = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap,i.uv);
-                float splatMask = SAMPLE_TEXTURE2D_LOD(_HeightMap, sampler_HeightMap, i.uv, 0).x;
-                if (splatMask < 0.05) {
-                    return float4(1, 1, 1, 1);
-                }
-                return col;
+                float4 col = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap,input.uv);
+                float4 normal = SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap,input.normalUV);
+                float4 splatMask= SAMPLE_TEXTURE2D(_SplatMap, sampler_SplatMap,input.normalUV);
+                normal = 2.0 * normal - 1.0;
+                Light lightData=GetMainLight();
+                
+
+                float3 diffuseColor =lightData.color*(max(0,dot( lightData.direction,normal))*0.5+0.5)*col.xyz;
+                float3 viewDir = normalize(_WorldSpaceCameraPos.xyz-input.positionWS);
+
+                float halfDir = normalize(lightData.direction+viewDir);
+
+                float3 specularColor = lightData.color* pow(saturate(dot(normal , halfDir)),1000);
+                float4 finalColor = float4(diffuseColor+specularColor,1);
+                return splatMask.bbbb;
             }
             ENDHLSL
         }

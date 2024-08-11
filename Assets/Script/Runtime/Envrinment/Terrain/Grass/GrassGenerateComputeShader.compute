@@ -1,9 +1,10 @@
 // Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel  GenerateGrassData
 
-#include "../../Terrain/TerrainDataStructDefine.hlsl"
+
+#include"../../Terrain/TerrainDataStructDefine.hlsl"
 #include"../../Terrain/GPUTerrainFunc.hlsl"
-#include "../../../../../Shader/Common/Math.hlsl"
+#include"../../../../../Shader/Common/Math.hlsl"
 
 StructuredBuffer<NodePatchData> _ConsumeList;
 AppendStructuredBuffer<GrassBlade> _GrassBladeBuffer;
