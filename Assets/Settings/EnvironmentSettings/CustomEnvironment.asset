@@ -12,22 +12,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 06c31044fa12d964aaac96c609fb6d30, type: 3}
   m_Name: CustomEnvironment
   m_EditorClassIdentifier: 
-  worldSize: 2560
+  worldSize: 5120
   nodeDevidePatch: 8
   sectorVertexs: 17
-  maxLodLevel: 4
+  maxLodLevel: 5
   baseLodNum: 5
   lodJudgeFector: 100
-  heightMap: {fileID: 2800000, guid: 2c66f914c14e8a3498686c9b995c1372, type: 2}
+  heightMap: {fileID: 2800000, guid: 86c6ca02f2fbcce418b1c5dec3fc38ae, type: 2}
   worldSizeScale: 600
   hizMap: {fileID: 0}
   hizMapSize: {x: 2048, y: 1024}
   terrainMat: {fileID: 2100000, guid: 7b2a75f9c7709d547835737bfd350a27, type: 2}
-  grassCS: {fileID: 0}
+  grassCS: {fileID: 7200000, guid: 04edfdc5ff0b2004e948646a5bc21732, type: 3}
   grassMesh: {fileID: 8254687373856176130, guid: 54e72127e5e654b44bff508df765e8e7,
     type: 3}
   grassMat: {fileID: 2100000, guid: 575baafc4cb78c54fbe6ff44ce5f1e74, type: 2}
-  grassSplatMap: {fileID: 2800000, guid: 2c66f914c14e8a3498686c9b995c1372, type: 2}
+  grassSplatMap: {fileID: 2800000, guid: 86c6ca02f2fbcce418b1c5dec3fc38ae, type: 2}
   perPatchGrassNums: 0
   grassChunkCount: 8
   grassStyleCount: 4
