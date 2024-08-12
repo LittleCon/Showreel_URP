@@ -59,12 +59,14 @@ namespace FC.Terrain
         public Texture grassSplatMap;
         [Range(10,640)]
         public int perPatchGrassNums;
-        [Tooltip("草坪的数量")]
-        public int grassChunkCount=8;
+   
 
         [Tooltip("草坪样式的数量")]
         public int grassStyleCount=4;
 
+        public int clumpTexWidth = 512;
+        public int clumpTexHeight = 512;
+        public Material clumpingVoronoiMat;
         public float clumpScale;
         public float jitterStrength;
         public List<ClumpParametersStruct> clumpParametersStructs;

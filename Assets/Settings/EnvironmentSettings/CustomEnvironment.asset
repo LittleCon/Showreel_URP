@@ -27,12 +27,14 @@ MonoBehaviour:
   grassMesh: {fileID: 8254687373856176130, guid: 54e72127e5e654b44bff508df765e8e7,
     type: 3}
   grassMat: {fileID: 2100000, guid: 575baafc4cb78c54fbe6ff44ce5f1e74, type: 2}
-  grassSplatMap: {fileID: 2800000, guid: 86c6ca02f2fbcce418b1c5dec3fc38ae, type: 2}
-  perPatchGrassNums: 0
-  grassChunkCount: 8
+  grassSplatMap: {fileID: 2800000, guid: 9aea903b4c49f97448c5699ba49d6478, type: 3}
+  perPatchGrassNums: 64
   grassStyleCount: 4
-  clumpScale: 0
-  jitterStrength: 0
+  clumpTexWidth: 512
+  clumpTexHeight: 512
+  clumpingVoronoiMat: {fileID: 2100000, guid: 9c7915cdbf85c1e489dbc6b4fb293adc, type: 2}
+  clumpScale: 0.1
+  jitterStrength: 0.8
   clumpParametersStructs:
   - pullToCentre: 0.1
     pointInSameDirection: 0

@@ -148,7 +148,7 @@ Varyings vert(uint vertexID:SV_VertexID, uint instanceID : SV_InstanceID)
 
 
 
-    output.positionCS = mul(UNITY_MATRIX_VP, float4(positionWS + positionOS, 1));
+    output.positionCS = mul(UNITY_MATRIX_VP, float4(positionWS, 1));
     output.color = bezierT;
     return output;
 }
@@ -157,7 +157,7 @@ float4 frag(Varyings i) : SV_Target
 {
     // sample the texture
     float4 col = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex,i.uv);
-    return float4(i.color,1);
+    return float4(1,0,0,1);
 }
 
 #endif

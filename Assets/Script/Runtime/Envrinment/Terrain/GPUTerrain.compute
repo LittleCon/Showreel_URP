@@ -405,8 +405,8 @@ void GrassPatchFilter(uint3 id : SV_DispatchThreadID)
     BaseData baseData = GenerateBaseData(_GlobalValues);
     NodePatchData patchData = _ConsumeList.Consume();
     uint2 patchUV = patchData.nodeXY * baseData.nodeDevidePatchNum + patchData.patchXY;
-    float grassMask = _GrassMaskSplatMap.mips[patchData.LOD][patchUV].x;
-    if (grassMask <0.05) {
+    float grassMask = _GrassMaskSplatMap.mips[patchData.LOD][patchUV].b;
+    if (grassMask >0.05) {
         _AppendTempList.Append(patchData);
     }
 }

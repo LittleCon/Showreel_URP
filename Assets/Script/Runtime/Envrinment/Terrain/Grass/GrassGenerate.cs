@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 
 namespace FC.Terrain
@@ -48,13 +49,17 @@ namespace FC.Terrain
         /// 绘制数量
         /// </summary>
         private ComputeBuffer instanceBuffer;
+        private int[] instanceData;
 
 
-        private ComputeBuffer grassBladeBuffer;
+    private ComputeBuffer grassBladeBuffer;
         private GrassBlade[] grassBlades;
 
         private ComputeBuffer clumpParamtersBuffer;
         private ClumpParametersStruct []clumpParametersStruct;
+
+        //线程组Buffer
+        private ComputeBuffer argsBuffer;
         #endregion
         struct GrassBlade
         {
@@ -78,7 +83,7 @@ namespace FC.Terrain
             }
         };
 
-        
+        private RenderTargetIdentifier clumpTex;
         public GrassGenerate(EnvironmentSettings environmentSettings)
         {
             this.environmentSettings = environmentSettings;
@@ -104,10 +109,15 @@ namespace FC.Terrain
             uvsBuffer = new ComputeBuffer(uvs.Length, sizeof(float) * 2);
             uvsBuffer.SetData(uvs);
 
-            instanceBuffer = new ComputeBuffer(4, sizeof(int), ComputeBufferType.IndirectArguments);
-            instanceBuffer.SetData(new int[] { trainglesBuffer.count, 1, 0, 0 });
+            instanceBuffer = new ComputeBuffer(5, sizeof(int), ComputeBufferType.IndirectArguments);
+            instanceData = new int[] { trainglesBuffer.count, 1, 0, 0, 0 };
+            instanceBuffer.SetData(instanceData);
 
-            //grassBladeBuffer = new ComputeBuffer(environmentSettings.grassNums, GrassBlade.GetSize(),ComputeBufferType.Append);
+            argsBuffer = new ComputeBuffer(3, sizeof(int), ComputeBufferType.IndirectArguments);
+            argsBuffer.SetData(new int[] { 1,1, 1 });
+
+            grassBladeBuffer = new ComputeBuffer(50000, GrassBlade.GetSize(),ComputeBufferType.Append);
+           
 
             grassMat.SetBuffer(ShaderProperties.Grass.vertexPosBuffer, vertexPosBuffer);
             grassMat.SetBuffer(ShaderProperties.Grass.vertexColorsBuffer, vertexColorsBuffer);
@@ -116,21 +126,41 @@ namespace FC.Terrain
             grassMat.SetBuffer(ShaderProperties.Grass.grassBladeBuffer, grassBladeBuffer);
 
             clumpParametersStruct = environmentSettings.clumpParametersStructs.ToArray();
-            clumpParamtersBuffer = new ComputeBuffer(clumpParamtersBuffer.count, ClumpParametersStruct.GetSize());
+            clumpParamtersBuffer = new ComputeBuffer(clumpParametersStruct.Length, ClumpParametersStruct.GetSize());
             clumpParamtersBuffer.SetData(clumpParametersStruct);
             generateGrassDataKernelID = grassCS.FindKernel("GenerateGrassData");
+            clumpTex = new RenderTargetIdentifier(ShaderProperties.Grass.clumpTexID);
         }
 
-        private void DrawGrass(CommandBuffer cmd,ComputeBuffer patchBuffer)
-        {
 
+        public void GenerateVoronoiTexture(CommandBuffer cmd)
+        {
+            cmd.GetTemporaryRT(ShaderProperties.Grass.clumpTexID,environmentSettings.clumpTexWidth, environmentSettings.clumpTexHeight, 0,FilterMode.Bilinear,GraphicsFormat.R32G32B32A32_SFloat);
+            cmd.Blit(ShaderProperties.Grass.clumpTexID, ShaderProperties.Grass.clumpTexID, environmentSettings.clumpingVoronoiMat, 0);
+        }
+        public void DrawGrass(CommandBuffer cmd,ComputeBuffer patchBuffer)
+        {
+            GenerateVoronoiTexture(cmd);
+            cmd.SetBufferCounterValue(grassBladeBuffer, 0);
+            instanceData[1] = 0;
+            cmd.SetBufferData(instanceBuffer, instanceData);
             cmd.SetComputeBufferParam(grassCS, generateGrassDataKernelID, ShaderProperties.GPUTerrain.consumeListID, patchBuffer);
+            cmd.CopyCounterValue(patchBuffer, argsBuffer, sizeof(int) * 2);
             cmd.SetComputeBufferParam(grassCS, generateGrassDataKernelID, ShaderProperties.Grass.grassBladeBuffer, grassBladeBuffer);
             cmd.SetComputeBufferParam(grassCS, generateGrassDataKernelID, ShaderProperties.Grass.clumpParametersID, clumpParamtersBuffer);
+            cmd.SetComputeTextureParam(grassCS, generateGrassDataKernelID, ShaderProperties.Grass.grassMaskSplatMapID, environmentSettings.grassSplatMap);
+            cmd.SetComputeTextureParam(grassCS, generateGrassDataKernelID, ShaderProperties.GPUTerrain.minMaxHeightMapID, environmentSettings.heightMap);
+            cmd.SetComputeTextureParam(grassCS, generateGrassDataKernelID, ShaderProperties.Grass.clumpTexID,Shader.GetGlobalTexture(ShaderProperties.Grass.clumpTexID));
             cmd.SetComputeIntParam(grassCS,  ShaderProperties.Grass.patchGrassNumsID, environmentSettings.perPatchGrassNums);
             cmd.SetComputeFloatParam(grassCS, ShaderProperties.Grass.jitterStrengthID, environmentSettings.jitterStrength);
             cmd.SetComputeFloatParam(grassCS, ShaderProperties.Grass.clumpScaleID, environmentSettings.clumpScale);
-            Graphics.DrawProceduralIndirect(grassMat, new Bounds(Vector3.zero, Vector3.one * 100), MeshTopology.Triangles, instanceBuffer);
+            cmd.SetComputeBufferParam(grassCS, generateGrassDataKernelID, ShaderProperties.GPUTerrain.instanceArgsID, instanceBuffer);
+            cmd.DispatchCompute(grassCS, generateGrassDataKernelID, argsBuffer,0);
+
+            
+            var length = new GrassBlade[500];
+            grassBladeBuffer.GetData(length);
+            Graphics.DrawProceduralIndirect(grassMat, new Bounds(Vector3.zero, Vector3.one * 5120), MeshTopology.Triangles, instanceBuffer);
         }
 
         public void Dispose()

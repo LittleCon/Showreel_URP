@@ -20,6 +20,14 @@ public static class ShaderProperties
         public static int instanceArgsID = Shader.PropertyToID("_InstanceArgs");
         public static int resultPatchMapID = Shader.PropertyToID("_ResultPatchMap");
 
+        public static int albedoTexNumsID = Shader.PropertyToID("_AlbedoTexNums");
+        public static int normalTexNumsID = Shader.PropertyToID("_NormalTexNums");
+        public static int albedoTexArrayID = Shader.PropertyToID("_AlbedoTexArray");
+        public static int normalTexArrayID = Shader.PropertyToID("_NormalTexArray"); 
+        public static int alphaMapSizeID = Shader.PropertyToID("_AlphaMapSize"); 
+        public static int blendScaleArrayShaderID = Shader.PropertyToID("_BlendScaleArrayShader");
+        public static int blendSharpnessArrayShaderId = Shader.PropertyToID("_BlendSharpnessArrayShader");
+        public static int blendTexArraryID = Shader.PropertyToID("_BlendTexArrayID");
     }
 
     public struct HizMap 
@@ -42,6 +50,7 @@ public static class ShaderProperties
         public static int grassMaskSplatMapID = Shader.PropertyToID("_GrassMaskSplatMap");
         public static int jitterStrengthID = Shader.PropertyToID("_JitterStrength");
         public static int patchGrassNumsID = Shader.PropertyToID("_PatchGrassNums");
+        public static int clumpTexID = Shader.PropertyToID("_ClumpTex");
         public static int clumpScaleID = Shader.PropertyToID("_ClumpScale");
         public static int clumpParametersID = Shader.PropertyToID("_ClumpParameters");
 

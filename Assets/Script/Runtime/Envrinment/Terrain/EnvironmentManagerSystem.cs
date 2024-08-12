@@ -76,6 +76,7 @@ namespace FC.Terrain
             terrainCreateImpl.UpdateTerrainShaderData();
             terrainCreateImpl.DrawTerrainInstance();
             terrainCreateImpl.GrassPatchFilter();
+            terrainCreateImpl.GenerateGrass();
             terrainCreateImpl.ExectCmd();
         }
 #if UNITY_EDITOR

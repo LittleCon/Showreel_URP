@@ -297,7 +297,7 @@ namespace FC.Terrain{
 
 
 
-            //grassGenerater.InitBuffer();
+            grassGenerater.InitBuffer();
         }
 
         public void GetCameraPalne()
@@ -313,6 +313,7 @@ namespace FC.Terrain{
                 globalValue[4 + i].Set(frustumPalnes[i].normal.x, frustumPalnes[i].normal.y, frustumPalnes[i].normal.z, frustumPalnes[i].distance);
             }
             cmd.SetComputeVectorArrayParam(GPUTerrainCS, ShaderProperties.GPUTerrain.globalValueID, globalValue);
+            cmd.SetComputeVectorArrayParam(environmentSettings.grassCS, ShaderProperties.GPUTerrain.globalValueID, globalValue);
         }
         public void ClearCmd()
         {
@@ -489,6 +490,11 @@ namespace FC.Terrain{
             cmd.DispatchCompute(GPUTerrainCS, GrassPatchFilterKernelID, dispatchArgs, 0);
         }
 
+        public void GenerateGrass()
+        {
+            grassGenerater.DrawGrass(cmd, appendTempBuffer2);
+        }
+
         public void SetKeyWorld()
         {
             if (EnvironmentManagerSystem.Instance.enableFrustumCull)
@@ -557,7 +563,7 @@ namespace FC.Terrain{
             RenderTexture.ReleaseTemporary(SectorLODMap);
 
             //Grass
-           // grassGenerater.Dispose();
+            grassGenerater.Dispose();
 #if UNITY_EDITOR
             if (lengthLogBuffer != null) lengthLogBuffer.Dispose();
 #endif

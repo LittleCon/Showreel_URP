@@ -66,6 +66,14 @@ Shader "FC/Terrain_Base"
 
             CBUFFER_START(TERRAIN)
                 float4 _BaseMap_ST;
+
+                float4 _TexArrayBlend_TexelSize;
+                float4 _AlbedoTexArray_TexelSize;
+                float2 _AlphaMapSize;
+                int _TotalArrayLength;
+                float _BlendScale[8];
+                float _BlendSharpness[8];
+                float _HeightBlendEnd;
             CBUFFER_END
             
             TEXTURE2D(_SplatMap);
@@ -78,6 +86,14 @@ Shader "FC/Terrain_Base"
             SAMPLER(sampler_HeightMap);
             TEXTURE2D(_BaseMap);
             SAMPLER(sampler_BaseMap);
+
+
+            TEXTURE2D_ARRAY(_AlbedoArray);         SAMPLER(sampler_AlbedoArray);
+            TEXTURE2D_ARRAY(_NormalArray);         SAMPLER(sampler_NormalArray);
+            TEXTURE2D_ARRAY(_HeightArray);         SAMPLER(sampler_HeightArray);
+            TEXTURE2D(_Noise);        SAMPLER(sampler_Noise);
+            Texture2D _TexArrayBlend;
+           
 
             #include "TerrainFunc.hlsl"
 
@@ -129,24 +145,40 @@ Shader "FC/Terrain_Base"
                 return output;
             }
 
-            float4 frag (Varyings input) : SV_Target
+            float4 frag(Varyings input) : SV_Target
             {
                 // sample the texture
-                float4 col = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap,input.uv);
-                float4 normal = SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap,input.normalUV);
-                float4 splatMask= SAMPLE_TEXTURE2D(_SplatMap, sampler_SplatMap,input.normalUV);
-                normal = 2.0 * normal - 1.0;
-                Light lightData=GetMainLight();
-                
+                //float4 col = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap,input.uv);
+                //float4 normal = SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap,input.normalUV);
+                //float4 splatMask= SAMPLE_TEXTURE2D(_SplatMap, sampler_SplatMap,input.normalUV);
+                //normal = 2.0 * normal - 1.0;
+                //Light lightData=GetMainLight();
+                //
 
-                float3 diffuseColor =lightData.color*(max(0,dot( lightData.direction,normal))*0.5+0.5)*col.xyz;
-                float3 viewDir = normalize(_WorldSpaceCameraPos.xyz-input.positionWS);
+                //float3 diffuseColor =lightData.color*(max(0,dot( lightData.direction,normal))*0.5+0.5)*col.xyz;
+                //float3 viewDir = normalize(_WorldSpaceCameraPos.xyz-input.positionWS);
 
-                float halfDir = normalize(lightData.direction+viewDir);
+                //float halfDir = normalize(lightData.direction+viewDir);
 
-                float3 specularColor = lightData.color* pow(saturate(dot(normal , halfDir)),1000);
-                float4 finalColor = float4(diffuseColor+specularColor,1);
-                return splatMask.bbbb;
+                //float3 specularColor = 0;//lightData.color* pow(saturate(dot(normal , halfDir)),1000);
+                //float4 finalColor = float4(diffuseColor+specularColor,1);
+                //return finalColor;
+
+                //1024认为是albedo贴图的尺寸
+                float2 texUV = input.uv * 1024 / 30;
+                float texSize = _AlphaMapSize.x;
+                float texNei = _AlphaMapSize.y;
+
+                float2 orignUV = input.uv * texSize;
+                int2 uvInt1 = floor(orignUV);
+
+                int2 uvInt2 = uvInt1 + uint2(0, 1);
+                if (orignUV.x - uvInt1.x > orignUV.y - uvInt1.y) {
+                    uvInt2 = uvInt1 + uint(1, 0);
+                }
+
+                uint2 uvInt3 = uvInt1 + uint2(1, 1);
+                uint blendData1 = _Te
             }
             ENDHLSL
         }

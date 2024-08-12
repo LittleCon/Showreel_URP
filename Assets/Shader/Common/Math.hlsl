@@ -32,6 +32,13 @@ float3x3 AngleAxis3x3(float angle, float3 axis)
 }
 
 
+float rand(float3 co)
+{
+	return frac(sin(dot(co.xyz, float3(12.9898, 78.233, 53.539))) * 43758.5453);
+}
+
+
+
 //一个随机抖动算法
 float2 Jitter(float2 p)
 {

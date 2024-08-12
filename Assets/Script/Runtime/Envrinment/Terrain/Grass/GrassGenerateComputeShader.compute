@@ -7,15 +7,17 @@
 #include"../../../../../Shader/Common/Math.hlsl"
 
 StructuredBuffer<NodePatchData> _ConsumeList;
+//AppendStructuredBuffer<NodePatchData> _AppendTempList;
 AppendStructuredBuffer<GrassBlade> _GrassBladeBuffer;
 StructuredBuffer<ClumpParametersStruct>_ClumpParameters;
+RWBuffer<uint> _InstanceArgs;
 
-
-Texture2D<float2>_MinMaxHeightMap;
-SamplerState samplerHeightMap;
-Texture2D<float4>_ClumpTex;
-SamplerState samplerClumpTex;
-Texture2D<float4>_GrassSplatMap;
+Texture2D _MinMaxHeightMap;
+SamplerState sampler_MinMaxHeightMap;
+Texture2D _ClumpTex;
+SamplerState sampler_ClumpTex;
+Texture2D _GrassMaskSplatMap;
+SamplerState sampler_GrassMaskSplatMap;
 uniform float4 _GlobalValues[10];
 uint _PatchGrassNums;
 float _JitterStrength;
@@ -28,13 +30,17 @@ float3 getTransformedVertex(BaseData baseData,float3 vertex) {
 
     worldUV = worldUV / baseData.worldSize + 0.5;
 
-    float height = _MinMaxHeightMap.SampleLevel(samplerHeightMap, worldUV, 0).x;
-    vertex.y += height * _HeightMapMultiplier;
+    float height = _MinMaxHeightMap.SampleLevel(sampler_MinMaxHeightMap, worldUV, 0).x-0.5;
+    vertex.y += height*2 * baseData.worldHeightScale;
 
     return vertex;
 
 }
+float remap01_neg11(float t) {
 
+    return (t * 2) - 1;
+
+}
 
 [numthreads(8, 8, 1)]
 void GenerateGrassData(uint3 id:SV_DispatchThreadID,  uint3 groupID : SV_GroupID) {
@@ -47,36 +53,45 @@ void GenerateGrassData(uint3 id:SV_DispatchThreadID,  uint3 groupID : SV_GroupID
     float2 patchPosInNode = GetPatchPosInNode(baseData, patchData.patchXY, patchData.LOD);
 
     float2 patchPos = nodePos + patchPosInNode;
-    float3 position = float3(id.x, 0, id.y)/ density- float3(patchPos.x,0,patchPos.y);
+    float3 position = float3(id.x, 0, id.y)- float3(patchPos.x,0,patchPos.y);
 
     float2 hash = Jitter(id.xy);
     float2 jitter = (hash * 2 - 1) * _JitterStrength;
 
     position.xz += jitter;
 
-
+    float2 worldUV = position.xz/baseData.worldSize;
+    float mask = _GrassMaskSplatMap.SampleLevel(sampler_GrassMaskSplatMap, worldUV, 0).z;
+    if (mask > 0.05)return;
     //get patch GrassBaseData
     float2 clumpUV = position.xz * float2(_ClumpScale.xx);
-    float3 clumpData = _ClumpTex.SampleLevel(samplerClumpTex, clumpUV, 0).xyz;
+    float3 clumpData = _ClumpTex.SampleLevel(sampler_ClumpTex, clumpUV, 0).xyz;
 
     float clumpParamIndex = clumpData.x;
     ClumpParametersStruct bladeParameters = _ClumpParameters[int(clumpParamIndex)];
 
     float2 clumpCentre = (clumpData.yz + floor(clumpUV)) / float2(_ClumpScale.xx);
-    position.xz = lerp(position.xz, clumpCentre, bladeParameters.pullToCentre);
+    //position.xz = lerp(position.xz, clumpCentre, bladeParameters.pullToCentre);
     float3 raisedVertex = getTransformedVertex(baseData,position);
 
     GrassBlade blade;
+    blade.color = 0;
+    blade.facing = 0;
+    blade.windStrength = 0;
+    blade.sideCurve = 0;
+    blade.clumpColorDistanceFade = 0;
+
     blade.position = raisedVertex;
     blade.rotAngle = 0;
     blade.hash = rand(id.xyx);
     blade.height = bladeParameters.baseHeight+ remap01_neg11(rand(id.xxy));
     blade.width = bladeParameters.baseWidth + remap01_neg11(rand(id.xxy));
-    blade.tilt = bladeParameters.baseTilt + remap01_neg11(rand(id.xyx * float3(1.12, 3.3, 17.6))) ;
+    blade.tile = bladeParameters.baseTilt + remap01_neg11(rand(id.xyx * float3(1.12, 3.3, 17.6))) ;
     blade.bend = bladeParameters.baseBend + remap01_neg11(rand(id.xyy * float3(12.32, 0.23, 3.39))) ;
 
     blade.surfaceNorm = 0;
 
-
+    uint currentIndex;
+    InterlockedAdd(_InstanceArgs[1], 1, currentIndex);
     _GrassBladeBuffer.Append(blade);
 }
