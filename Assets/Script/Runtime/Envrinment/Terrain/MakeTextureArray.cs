@@ -1,3 +1,4 @@
+using FC.Terrain;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -20,6 +21,8 @@ public class MakeTextureArray : MonoBehaviour
     public List<float> blendScaleList;
     public List<float> blendSharpnessList;
 
+    public EnvironmentSettings environmentSettings;
+
     struct LayerWeight
     {
         public int index;
@@ -27,6 +30,22 @@ public class MakeTextureArray : MonoBehaviour
     }
     private void Awake()
     {
+        if (blendScaleList == null || blendScaleList.Count == 0)
+        {
+            blendScaleList = new List<float>();
+            for (int i = 0; i < 8; i++)
+            {
+                blendScaleList.Add(1);
+            }
+        }
+        if (blendSharpnessList == null || blendSharpnessList.Count == 0)
+        {
+            blendSharpnessList = new List<float>();
+            for (int i = 0; i < 8; i++)
+            {
+                blendSharpnessList.Add(1);
+            }
+        }
         if (albedos.Count == 0) return;
         albedoArray = new Texture2DArray(albedos[0].width, albedos[0].height, albedos.Count, albedos[0].format, true, false);
         normalArray = new Texture2DArray(normals[0].width, normals[0].height, normals.Count, normals[0].format, true, false);
@@ -123,7 +142,7 @@ public class MakeTextureArray : MonoBehaviour
         Shader.SetGlobalFloat("_HeightBlendEnd", 400);
         Shader.SetGlobalFloatArray(ShaderProperties.GPUTerrain.blendScaleArrayShaderID, blendScaleList);
         Shader.SetGlobalFloatArray(ShaderProperties.GPUTerrain.blendSharpnessArrayShaderId, blendSharpnessList);
-        Shader.SetGlobalTexture(ShaderProperties.GPUTerrain.blendTexArraryID, blendTex);
+        environmentSettings.terrainMat.SetTexture(ShaderProperties.GPUTerrain.blendTexArraryID, blendTex);
     }
 
     private void Update()
@@ -139,6 +158,7 @@ public class MakeTextureArray : MonoBehaviour
         //{
         //    Shader.DisableKeyword("_HeightBlend");
         //}
+        environmentSettings.terrainMat.SetTexture(ShaderProperties.GPUTerrain.blendTexArraryID, blendTex);
     }
 
     private void OnDestroy()

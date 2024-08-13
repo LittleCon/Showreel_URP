@@ -12,13 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 06c31044fa12d964aaac96c609fb6d30, type: 3}
   m_Name: CustomEnvironment
   m_EditorClassIdentifier: 
-  worldSize: 5120
+  worldSize: 8192
   nodeDevidePatch: 8
   sectorVertexs: 17
   maxLodLevel: 5
-  baseLodNum: 5
+  baseLodNum: 4
   lodJudgeFector: 100
-  heightMap: {fileID: 2800000, guid: 86c6ca02f2fbcce418b1c5dec3fc38ae, type: 2}
+  heightMap: {fileID: 2800000, guid: 84c5e34bb409cc6478fd3e4402276c07, type: 2}
   worldSizeScale: 600
   hizMap: {fileID: 0}
   hizMapSize: {x: 2048, y: 1024}

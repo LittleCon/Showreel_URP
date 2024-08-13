@@ -27,7 +27,7 @@ public static class ShaderProperties
         public static int alphaMapSizeID = Shader.PropertyToID("_AlphaMapSize"); 
         public static int blendScaleArrayShaderID = Shader.PropertyToID("_BlendScaleArrayShader");
         public static int blendSharpnessArrayShaderId = Shader.PropertyToID("_BlendSharpnessArrayShader");
-        public static int blendTexArraryID = Shader.PropertyToID("_BlendTexArrayID");
+        public static int blendTexArraryID = Shader.PropertyToID("_BlendTexArray");
     }
 
     public struct HizMap 

@@ -492,7 +492,7 @@ namespace FC.Terrain{
 
         public void GenerateGrass()
         {
-            grassGenerater.DrawGrass(cmd, appendTempBuffer2);
+           // grassGenerater.DrawGrass(cmd, appendTempBuffer2);
         }
 
         public void SetKeyWorld()
