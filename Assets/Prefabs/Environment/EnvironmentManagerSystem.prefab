@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 1997620340495381880}
   - component: {fileID: 8537683968673832522}
   - component: {fileID: 414911433627610877}
+  - component: {fileID: 3930356424272717058}
   m_Layer: 0
   m_Name: EnvironmentManagerSystem
   m_TagString: Untagged
@@ -45,11 +46,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8057b80e7da446541ba6bf78989e5860, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  environmentSettings: {fileID: 11400000, guid: 0bf2482a6e1604945b49eb42fd2083e2,
+  environmentSettings: {fileID: 11400000, guid: f6147938c9496fe48ac51f7f6c7fda13,
     type: 2}
   GPUTerrainCS: {fileID: 7200000, guid: 38cb63b79b43f3448b5bb3f05fe49f0d, type: 3}
-  debug: 1
+  debugAllNode: 0
+  debugAfterFrustumNode: 0
+  showCompeleteTerrain: 0
+  debugPatch: 0
+  enableFrustumCull: 0
+  enableHizCull: 0
 --- !u!114 &414911433627610877
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6710797944669668235}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab6c3c13ccd2a4a4b9c08165e2546fa8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  terrainMarkGo: {fileID: 1624075620186330691, guid: 4953fe2e56224b847af05cc77e7a6fe2,
+    type: 3}
+--- !u!114 &3930356424272717058
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -58,8 +78,29 @@ MonoBehaviour:
   m_GameObject: {fileID: 6710797944669668235}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ab6c3c13ccd2a4a4b9c08165e2546fa8, type: 3}
+  m_Script: {fileID: 11500000, guid: f1ec869b61b6f6f4a911d39ec5003657, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  terrainMarkGo: {fileID: 1624075620186330691, guid: 4953fe2e56224b847af05cc77e7a6fe2,
-    type: 3}
+  albedos:
+  - {fileID: 2800000, guid: c745e53cbf802e049b90f046c46b183c, type: 3}
+  - {fileID: 2800000, guid: c745e53cbf802e049b90f046c46b183c, type: 3}
+  - {fileID: 2800000, guid: c745e53cbf802e049b90f046c46b183c, type: 3}
+  - {fileID: 2800000, guid: c745e53cbf802e049b90f046c46b183c, type: 3}
+  - {fileID: 2800000, guid: c745e53cbf802e049b90f046c46b183c, type: 3}
+  - {fileID: 2800000, guid: c745e53cbf802e049b90f046c46b183c, type: 3}
+  normals:
+  - {fileID: 2800000, guid: c4c5ba035d5562040a5e75a6ee6bd944, type: 3}
+  - {fileID: 2800000, guid: c4c5ba035d5562040a5e75a6ee6bd944, type: 3}
+  - {fileID: 2800000, guid: c4c5ba035d5562040a5e75a6ee6bd944, type: 3}
+  - {fileID: 2800000, guid: c4c5ba035d5562040a5e75a6ee6bd944, type: 3}
+  - {fileID: 2800000, guid: c4c5ba035d5562040a5e75a6ee6bd944, type: 3}
+  - {fileID: 2800000, guid: c4c5ba035d5562040a5e75a6ee6bd944, type: 3}
+  heightMap: {fileID: 2800000, guid: e4ace08db512b6047a3beeb8055ceb4d, type: 3}
+  splatMaps:
+  - {fileID: 2800000, guid: 9aea903b4c49f97448c5699ba49d6478, type: 3}
+  - {fileID: 2800000, guid: 72ad917529063d040ba069db1ba1076c, type: 3}
+  blendTex: {fileID: 0}
+  blendScaleList: []
+  blendSharpnessList: []
+  environmentSettings: {fileID: 11400000, guid: f6147938c9496fe48ac51f7f6c7fda13,
+    type: 2}
