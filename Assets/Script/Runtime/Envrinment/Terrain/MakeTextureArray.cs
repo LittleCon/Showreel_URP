@@ -2,8 +2,12 @@ using FC.Terrain;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using Unity.Mathematics;
+using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.XR;
 
 public class MakeTextureArray : MonoBehaviour
 {
@@ -15,8 +19,8 @@ public class MakeTextureArray : MonoBehaviour
     public Texture2D blendTex;
     private TerrainData terrainData;
 
-    private Texture2DArray albedoArray;
-    private Texture2DArray normalArray;
+    public Texture2DArray albedoArray;
+    public Texture2DArray normalArray;
 
     public List<float> blendScaleList;
     public List<float> blendSharpnessList;
@@ -59,81 +63,88 @@ public class MakeTextureArray : MonoBehaviour
                 Graphics.CopyTexture(normals[i], 0, j, normalArray, i, j);
             }
         }
-
+        environmentSettings.terrainMat.SetTexture(ShaderProperties.GPUTerrain.albedoTexArrayID, albedoArray);
+        environmentSettings.terrainMat.SetTexture(ShaderProperties.GPUTerrain.normalTexArrayID, normalArray);
         var width = heightMap.width;
         var height = heightMap.height;
         var splatCount = albedos.Count;
 
-        blendTex = new Texture2D(width, height, TextureFormat.R16, false, true)
+        if (blendTex == null)
         {
-            name = "_BlendTexArray",
-            anisoLevel = 0,
-            filterMode = FilterMode.Point,
-            wrapMode = TextureWrapMode.Clamp
-        };
-
-        var tileIndex = new int2[width * height];
-        var weights = new LayerWeight[splatCount];
-        var weightVal = new int[width * height];
-
-        for (int i = 0; i < width; i++)
-        {
-            for (int j = 0; j < height; j++)
+            blendTex = new Texture2D(width, height, TextureFormat.R16, false, true)
             {
-                for (int k = 0; k < splatCount; k++)
-                {
-                    int splatIndex = k / 4;
-                    int colorIndex = k % 4;
-                    weights[k].weight = splatMaps[splatIndex].GetPixel(i, j)[colorIndex];
-                    weights[k].index = k;
-                }
-                Array.Sort(weights, (a, b) => { return -a.weight.CompareTo(b.weight); });
+                name = "_BlendTexArray",
+                anisoLevel = 0,
+                filterMode = FilterMode.Point,
+                wrapMode = TextureWrapMode.Clamp
+            };
 
-                var tw = 0f;
-                var blendCount = 2;
-                for(int k = 0; k < blendCount; k++)
-                {
-                    tw += weights[k].weight;
-                }
+            var tileIndex = new int2[width * height];
+            var weights = new LayerWeight[splatCount];
+            var weightVal = new int[width * height];
 
-                if (tw == 0)
+            for (int i = 0; i < width; i++)
+            {
+                for (int j = 0; j < height; j++)
                 {
-                    tw = 1;
-                    weights[0].weight = 1;
-                }
-                else
-                {
-                    for(int k = 0; k < blendCount; k++)
+                    for (int k = 0; k < splatCount; k++)
                     {
-                        weights[k].weight /= tw;
+                        int splatIndex = k;
+                        weights[k].weight = splatMaps[splatIndex].GetPixel(i, j).r;
+                        weights[k].index = k;
                     }
+                    Array.Sort(weights, (a, b) => { return a.weight.CompareTo(b.weight); });
+
+                    var tw = 0f;
+                    var blendCount = 2;
+                    for (int k = 0; k < blendCount; k++)
+                    {
+                        tw += weights[k].weight;
+                    }
+
+                    if (tw == 0)
+                    {
+                        tw = 1;
+                        weights[0].weight = 1;
+                    }
+                    else
+                    {
+                        for (int k = 0; k < blendCount; k++)
+                        {
+                            weights[k].weight /= tw;
+                        }
+                    }
+
+                    if (weights[1].weight == 0)
+                    {
+                        weights[1].index = weights[0].index;
+                    }
+                    tileIndex[i * height + j] = new int2(weights[0].index, weights[1].index);
+                    float weightDiff = Mathf.Clamp(weights[0].weight - weights[1].weight, 0, 0.9999f);
+                    weightVal[i * height + j] = Mathf.FloorToInt(64f * weightDiff);
                 }
 
-                if (weights[1].weight == 0)
-                {
-                    weights[1].index = weights[0].index;
-                }
-                tileIndex[i * height + j] = new int2(weights[0].index, weights[1].index);
-                float weightDiff = Mathf.Clamp(weights[0].weight - weights[1].weight, 0, 0.9999f);
-                weightVal[i * height + j] = Mathf.FloorToInt(64f * weightDiff);
+            }
+            var texByte = new ushort[width * height];
+            for (int i = 0; i < tileIndex.Length; i++)
+            {
+                texByte[i] = (ushort)(weightVal[i] + (tileIndex[i].y << 6) + (tileIndex[i].x << 11));
+
             }
 
+            byte[] texBytes = new byte[texByte.Length * 2];
+
+            Buffer.BlockCopy(texByte, 0, texBytes, 0, texByte.Length * 2);
+            blendTex.LoadRawTextureData(texBytes);
+            blendTex.Apply(false, false);
+            byte[] pngData = blendTex.EncodeToPNG();
+
+            File.WriteAllBytes(Path.Combine("Assets/Textures/Environment", "BlendTex.png"), pngData);
         }
-        var texByte = new ushort[width * height];
-        for (int i = 0; i < tileIndex.Length; i++)
-        {
-            texByte[i] = (ushort)(weightVal[i] + (tileIndex[i].y << 6) + (tileIndex[i].x << 11));
 
-        }
 
-        byte[] texBytes = new byte[texByte.Length * 2];
 
-        Buffer.BlockCopy(texByte, 0, texBytes, 0, texByte.Length * 2);
-        blendTex.LoadRawTextureData(texBytes);
-        blendTex.Apply(false, false);
-
-        Shader.SetGlobalTexture(ShaderProperties.GPUTerrain.albedoTexArrayID, albedoArray);
-        Shader.SetGlobalTexture(ShaderProperties.GPUTerrain.normalTexArrayID, normalArray);
+      
         Shader.SetGlobalTexture(ShaderProperties.GPUTerrain.minMaxHeightMapID, heightMap); //此处应该使用alpha8的HeightMap,测试暂用AlbedoArray
         Shader.SetGlobalInt(ShaderProperties.GPUTerrain.albedoTexNumsID, albedos.Count);
 
@@ -147,6 +158,8 @@ public class MakeTextureArray : MonoBehaviour
 
     private void Update()
     {
+        environmentSettings.terrainMat.SetTexture(ShaderProperties.GPUTerrain.albedoTexArrayID, albedoArray);
+        environmentSettings.terrainMat.SetTexture(ShaderProperties.GPUTerrain.normalTexArrayID, normalArray);
         Shader.SetGlobalFloat("_HeightBlendEnd", 400);
         Shader.SetGlobalFloatArray(ShaderProperties.GPUTerrain.blendScaleArrayShaderID, blendScaleList);
         Shader.SetGlobalFloatArray(ShaderProperties.GPUTerrain.blendSharpnessArrayShaderId, blendSharpnessList);
@@ -165,6 +178,6 @@ public class MakeTextureArray : MonoBehaviour
     {
         DestroyImmediate(albedoArray);
         DestroyImmediate(normalArray);
-        DestroyImmediate(blendTex);
+       
     }
 }

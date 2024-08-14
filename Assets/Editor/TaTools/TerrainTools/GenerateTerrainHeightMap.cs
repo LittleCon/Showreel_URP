@@ -1,3 +1,4 @@
+using FC.Terrain;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
@@ -9,6 +10,7 @@ namespace FC.TerrainTools
     public class GenerateTerrainHeightMap : EditorWindow
     {
         public TerrainData terrainData;
+        public EnvironmentSettings environmentSettings;
         private string fileName;
         private Vector2Int heightMapSize=new Vector2Int(1024,1024);
         private int mipmapLevel;
@@ -32,6 +34,21 @@ namespace FC.TerrainTools
                 BuildMinMaxMap();
             }
             EditorGUILayout.EndVertical();
+
+            EditorGUILayout.BeginVertical();
+            environmentSettings = EditorGUILayout.ObjectField(new GUIContent("地形数据"), terrainData, typeof(EnvironmentSettings), true) as EnvironmentSettings;
+            if (GUILayout.Button("生成"))
+            {
+                CreateBlendTex();
+            }
+            EditorGUILayout.EndVertical();
+        }
+
+
+        private void CreateBlendTex()
+        {
+            if (environmentSettings == null) return;
+
         }
 
         RenderTexture outputRT;

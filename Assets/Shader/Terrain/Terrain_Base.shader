@@ -7,6 +7,7 @@ Shader "FC/Terrain_Base"
         _HeightMap("HeightMap", 2D) = "white" {}
         _ResultPatchMap("_RenderPatchMap",2D) = "white"{}
         _SplatMap ("SplatMap",2D)= "white"{}
+        _AlbedoArray("AlbedoArray",2DArray) = "white"{}
     }
     SubShader
     {
@@ -141,7 +142,7 @@ Shader "FC/Terrain_Base"
 
                 output.positionCS = vertexInput.positionCS;
                 output.uv = TRANSFORM_TEX(terrainUV,_BaseMap);
-                output.normalUV=terrainUV;
+                output.normalUV = terrainUV;
                 output.positionWS = vertexInput.positionWS;
                 output.viewDirWS = GetWorldSpaceViewDir(output.positionWS);
                 return output;
@@ -167,33 +168,41 @@ Shader "FC/Terrain_Base"
                 //return finalColor;
 
                 //1024认为是albedo贴图的尺寸
-                float2 texUV = input.normalUV * 2048 / 60;
-                float texSize = _AlphaMapSize.x;//高度图的尺寸
-                float texNei = _AlphaMapSize.y;
+                float2 texUV = input.normalUV ;
+                float texSize = _AlphaMapSize.x;//高度图的宽度
+                float texNei = _AlphaMapSize.y;//高度图宽度分之一
 
+                //转化为纹理坐标
                 float2 orignUV = input.normalUV * texSize;
                 int2 uvInt1 = floor(orignUV);
 
+                //构建采样三角形
                 int2 uvInt2 = uvInt1 + uint2(0, 1);
                 if (orignUV.x - uvInt1.x > orignUV.y - uvInt1.y) {
                     uvInt2 = uvInt1 + uint2(1, 0);
                 }
 
                 uint2 uvInt3 = uvInt1 + uint2(1, 1);
+                // _BlendTexArray.Load(int3(uvInt1, 0)).r相当于纹理采样返回float类型数据
+                //由于blenderTex中我们只存储了16位数据（且是低16位）而float是32数据，因此我们通过将其结果呈上0xFFFF来获取低16位信息
                 uint blendData1 = _BlendTexArray.Load(uint3(uvInt1, 0)).r * 0xFFFF;
                 uint blendData2 = _BlendTexArray.Load(uint3(uvInt2, 0)).r * 0xFFFF;
                 uint blendData3 = _BlendTexArray.Load(uint3(uvInt3, 0)).r * 0xFFFF;
 
                 int and5 = (1 << 5) - 1;
+                //blend.x存储权重大的材质索引，y存储权重低的材质索引
                 int2 blend1 = int2(blendData1 >> 11, (blendData1 >> 6) & and5);
                 int2 blend2 = int2(blendData2 >> 11, (blendData2 >> 6) & and5);
                 int2 blend3 = int2(blendData3 >> 11, (blendData3 >> 6) & and5);
-                float2 uv1 = uvInt1 * texNei;
-                float2 uv2 = uvInt2 * texNei;
-                float2 uv3 = uvInt3 * texNei;
+                float2 uv1 = uvInt1 * texNei;//将其重新映射回uv坐标
+                float2 uv2 = uvInt2 * texNei;//将其重新映射回uv坐标
+                float2 uv3 = uvInt3 * texNei;//将其重新映射回uv坐标
+                //重心差值计算当前像素权重
                 float w3 = ((uv1.y - uv2.y) * input.uv.x + (uv2.x - uv1.x) * input.uv.y + uv1.x * uv2.y - uv2.x * uv1.y) / ((uv1.y - uv2.y) * uv3.x + (uv2.x - uv1.x) * uv3.y + uv1.x * uv2.y - uv2.x * uv1.y);
                 float w2 = ((uv1.y - uv3.y) * input.uv.x + (uv3.x - uv1.x) * input.uv.y + uv1.x * uv3.y - uv3.x * uv1.y) / ((uv1.y - uv3.y) * uv2.x + (uv3.x - uv1.x) * uv2.y + uv1.x * uv3.y - uv3.x * uv1.y);
                 float w1 = 1 - w2 - w3;
+
+                //获得三角形三个顶点所在像素的权重信息
                 int and6 = (1 << 6) - 1;
                 float inv64 = 0.015625;//1/64
                 float diff1 = ((blendData1 & and6) + 1) * inv64;
@@ -202,6 +211,8 @@ Shader "FC/Terrain_Base"
                 float2 weight2 = float2(0.5 * (1 + diff2), 0.5 * (1 - diff2)) * w2;
                 float diff3 = ((blendData3 & and6) + 1) * inv64;
                 float2 weight3 = float2(0.5 * (1 + diff3), 0.5 * (1 - diff3)) * w3;
+
+
                 float2 m[8];
                 int i, j;
                 for (i = 0; i < 8; i++)
@@ -302,7 +313,7 @@ Shader "FC/Terrain_Base"
                     mainLight,
                     normal.xzy, input.viewDirWS,
                     0, false);
-                return  half4(color, 1);
+                return  half4(color,1);
 
             }
             ENDHLSL

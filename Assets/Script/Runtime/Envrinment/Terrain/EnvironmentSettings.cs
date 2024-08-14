@@ -70,6 +70,13 @@ namespace FC.Terrain
         public float clumpScale;
         public float jitterStrength;
         public List<ClumpParametersStruct> clumpParametersStructs;
+
+        [Header("²ÄÖÊ")]
+        public List<Texture2D> albedos;
+        public List<Texture2D> normals;
+        public List<Texture2D> splatMaps;
+
+        
     }
 
     

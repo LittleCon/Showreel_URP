@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: c429be027c204a1499a1de9746e1d86d
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures:
+  - _BaseMap: {instanceID: 0}
+  - _NormalMap: {instanceID: 0}
+  - _HeightMap: {instanceID: 0}
+  - _ResultPatchMap: {instanceID: 0}
+  - _SplatMap1: {instanceID: 0}
+  - _SplatMap2: {instanceID: 0}
+  - _SplatMap3: {instanceID: 0}
+  - _SplatMap4: {instanceID: 0}
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
