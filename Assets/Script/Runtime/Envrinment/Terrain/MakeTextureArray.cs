@@ -82,7 +82,7 @@ public class MakeTextureArray : MonoBehaviour
             var tileIndex = new int2[width * height];
             var weights = new LayerWeight[splatCount];
             var weightVal = new int[width * height];
-
+            var count = 0;
             for (int i = 0; i < width; i++)
             {
                 for (int j = 0; j < height; j++)
@@ -93,15 +93,16 @@ public class MakeTextureArray : MonoBehaviour
                         weights[k].weight = splatMaps[splatIndex].GetPixel(i, j).r;
                         weights[k].index = k;
                     }
-                    Array.Sort(weights, (a, b) => { return a.weight.CompareTo(b.weight); });
+                    Array.Sort(weights, (a, b) => { return -a.weight.CompareTo(b.weight); });
 
                     var tw = 0f;
                     var blendCount = 2;
                     for (int k = 0; k < blendCount; k++)
                     {
                         tw += weights[k].weight;
+                        
                     }
-
+                    //权重为0的地方代表没有使用材质，这个时候一般要赋予的是默认材质，我们此时另weights[0]的权重直接为1，其实默认了albedo[0]是默认材质贴图
                     if (tw == 0)
                     {
                         tw = 1;
@@ -109,22 +110,22 @@ public class MakeTextureArray : MonoBehaviour
                     }
                     else
                     {
+                        //tw是存在大于1的情况的，即两个splatmap在该像素都有值，且相加>1，相加后在处于tw，能够将weight缩放到[0-1]
                         for (int k = 0; k < blendCount; k++)
                         {
                             weights[k].weight /= tw;
                         }
                     }
 
-                    if (weights[1].weight == 0)
-                    {
-                        weights[1].index = weights[0].index;
-                    }
+
+                    
                     tileIndex[i * height + j] = new int2(weights[0].index, weights[1].index);
                     float weightDiff = Mathf.Clamp(weights[0].weight - weights[1].weight, 0, 0.9999f);
                     weightVal[i * height + j] = Mathf.FloorToInt(64f * weightDiff);
                 }
 
             }
+            Debug.LogError(count);
             var texByte = new ushort[width * height];
             for (int i = 0; i < tileIndex.Length; i++)
             {
@@ -142,9 +143,9 @@ public class MakeTextureArray : MonoBehaviour
             File.WriteAllBytes(Path.Combine("Assets/Textures/Environment", "BlendTex.png"), pngData);
         }
 
+     
 
 
-      
         Shader.SetGlobalTexture(ShaderProperties.GPUTerrain.minMaxHeightMapID, heightMap); //此处应该使用alpha8的HeightMap,测试暂用AlbedoArray
         Shader.SetGlobalInt(ShaderProperties.GPUTerrain.albedoTexNumsID, albedos.Count);
 

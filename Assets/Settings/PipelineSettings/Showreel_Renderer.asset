@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 33a21cde8654c834cad3c1d654b2d2f0, type: 3}
   m_Name: HizMapRenderFeature
   m_EditorClassIdentifier: 
-  m_Active: 0
+  m_Active: 1
   hizMapCS: {fileID: 7200000, guid: e16e81a396a06b14d9bfce6ea9a699bf, type: 3}
   environmentSettings: {fileID: 11400000, guid: f6147938c9496fe48ac51f7f6c7fda13,
     type: 2}

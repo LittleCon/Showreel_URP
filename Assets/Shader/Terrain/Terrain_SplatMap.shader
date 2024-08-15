@@ -176,15 +176,10 @@ Shader "FC/Terrain_SplatMap"
                 float3 road = SAMPLE_TEXTURE2D(_RoadMap, sampler_RoadMap, input.uv);
                 float3 house = SAMPLE_TEXTURE2D(_HouseMap, sampler_HouseMap, input.uv);
                 
-                float3 finalColor = 0;
-                finalColor = (finalColor, dirt, splatMap1);
-                finalColor = (finalColor, grass, splatMap2);
-                finalColor = (finalColor, road, splatMap3);
-                finalColor = (finalColor, house, splatMap4);
-                finalColor = dirt * splatMap1+grass;
-                if (splatMap3 > 0) {
-                    finalColor = road * splatMap3;
-                }
+                float3 albedo = 0;
+      
+                albedo = house;
+              
                 
                 // sample the texture
                 //float4 col = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap,input.uv);
@@ -202,17 +197,28 @@ Shader "FC/Terrain_SplatMap"
                 //float3 specularColor = 0;//lightData.color* pow(saturate(dot(normal , halfDir)),1000);
                 //float4 finalColor = float4(diffuseColor+specularColor,1);
                 //return finalColor;
+                half3 normal = SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, input.normalUV);
+                normal.xy = normal.xy * 2 - 1;
+                normal.z = sqrt(1.0 - saturate(dot(normal.xy, normal.xy)));
+                normal = normalize(normal);
+                BRDFData brdfData;
+                half alpha = 1;
+                InitializeBRDFData(albedo, 0, half3(0, 0, 0), 0, alpha, brdfData);
+                half4 shadowCoord = TransformWorldToShadowCoord(input.positionWS);
+                Light mainLight = GetMainLight(shadowCoord, input.positionWS, 0);
 
-                
+                BRDFData brdfDataClearCoat = (BRDFData)0;
+                half3 color = LightingPhysicallyBased(brdfData, brdfDataClearCoat,
+                    mainLight,
+                    normal.xzy, input.viewDirWS,
+                    0, false);
             /*    half3 albedo = albedo1.rgb * w1 + albedo2.rgb * w2 + albedo3 * w3;
-                half3 normal1 = SAMPLE_TEXTURE2D_ARRAY(_NormalTexArray, sampler_NormalTexArray, texUV, index1);
+                
                 half3 normal2 = SAMPLE_TEXTURE2D_ARRAY(_NormalTexArray, sampler_NormalTexArray, texUV, index2);
                 half3 normal3 = SAMPLE_TEXTURE2D_ARRAY(_NormalTexArray, sampler_NormalTexArray, texUV, index3);
                 half3 normal = normal1.rgb * w1 + normal2.rgb * w2 + normal3 * w3;
 
-                normal.xy = normal.xy * 2 - 1;
-                normal.z = sqrt(1.0 - saturate(dot(normal.xy, normal.xy)));
-                normal = normalize(normal);
+               
 
                 BRDFData brdfData;
                 half alpha = 1;
@@ -225,7 +231,7 @@ Shader "FC/Terrain_SplatMap"
                     mainLight,
                     normal.xzy, input.viewDirWS,
                     0, false);*/
-                return  half4(finalColor, 1);
+                return  half4(color, 1);
 
             }
             ENDHLSL

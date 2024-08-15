@@ -168,7 +168,7 @@ Shader "FC/Terrain_Base"
                 //return finalColor;
 
                 //1024认为是albedo贴图的尺寸
-                float2 texUV = input.normalUV ;
+                float2 texUV = input.normalUV *1024/30*3;
                 float texSize = _AlphaMapSize.x;//高度图的宽度
                 float texNei = _AlphaMapSize.y;//高度图宽度分之一
 
@@ -279,6 +279,7 @@ Shader "FC/Terrain_Base"
                 int index1 = round(m[7].x);
                 int index2 = round(m[6].x);
                 int index3 = round(m[5].x);
+         
                 half4 albedo1 = SAMPLE_TEXTURE2D_ARRAY(_AlbedoTexArray, sampler_AlbedoTexArray, texUV, index1);
                 half4 albedo2 = SAMPLE_TEXTURE2D_ARRAY(_AlbedoTexArray, sampler_AlbedoTexArray, texUV, index2);
                 half4 albedo3 = SAMPLE_TEXTURE2D_ARRAY(_AlbedoTexArray, sampler_AlbedoTexArray, texUV, index3);
@@ -313,7 +314,7 @@ Shader "FC/Terrain_Base"
                     mainLight,
                     normal.xzy, input.viewDirWS,
                     0, false);
-                return  half4(color,1);
+                return  half4(color, 1);
 
             }
             ENDHLSL

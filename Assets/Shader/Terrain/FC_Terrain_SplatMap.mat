@@ -24,27 +24,27 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _BaseMap:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 10309, guid: 0000000000000000f000000000000000, type: 0}
         m_Scale: {x: 100, y: 100}
         m_Offset: {x: 0, y: 0}
     - _DirtMap:
-        m_Texture: {fileID: 2800000, guid: c745e53cbf802e049b90f046c46b183c, type: 3}
+        m_Texture: {fileID: 2800000, guid: 8d7ac9f03f54e30469142b23f9516e8c, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _GrassMap:
-        m_Texture: {fileID: 2800000, guid: 2f2880749a408af4b9898f7872c7492c, type: 3}
+        m_Texture: {fileID: 2800000, guid: e24f01e3943673840bb37b5166635ebc, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _HeightMap:
-        m_Texture: {fileID: 2800000, guid: f8228b4fb0103524c8478f8614921e17, type: 3}
+        m_Texture: {fileID: 2800000, guid: 4bc0f82997daf124cb6a798c9da0061c, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _HouseMap:
-        m_Texture: {fileID: 2800000, guid: e9866699a4ddce642b7da4aeaa74d279, type: 3}
+        m_Texture: {fileID: 10309, guid: 0000000000000000f000000000000000, type: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _NormalMap:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: 07128b2c0cde11e4fa670d94ac314d3b, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _ResultPatchMap:
@@ -52,15 +52,15 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _RoadMap:
-        m_Texture: {fileID: 10309, guid: 0000000000000000f000000000000000, type: 0}
+        m_Texture: {fileID: 2800000, guid: d2766925bee19244e9dd58459e278ffe, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _SplatMap1:
-        m_Texture: {fileID: 2800000, guid: 746e81579a0a3884fa6ca6d568ed51e6, type: 3}
+        m_Texture: {fileID: 2800000, guid: 1c64466071f452e4cb0d253e42f5d9fe, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _SplatMap2:
-        m_Texture: {fileID: 2800000, guid: 1c64466071f452e4cb0d253e42f5d9fe, type: 3}
+        m_Texture: {fileID: 2800000, guid: 746e81579a0a3884fa6ca6d568ed51e6, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _SplatMap3:
