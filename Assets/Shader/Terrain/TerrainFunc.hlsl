@@ -1,10 +1,6 @@
 #ifndef TERRAIN_FUNC
 #define TERRAIN_FUNC
 
-inline float GetPatchSizeInLod(BaseData baseData, int LOD)
-{
-    return baseData.patchSize * (1 << LOD);
-}
 
 inline void FixLODConnectSeam(inout float4 vertex, uint2 PatchXYInNode, uint NodeLOD, uint4 LOADTrans, BaseData baseData)
 {
@@ -57,17 +53,6 @@ inline void FixLODConnectSeam(inout float4 vertex, uint2 PatchXYInNode, uint Nod
 }
 
 
-
-
-inline float GetNodeSizeByLod(BaseData baseData, int LOD) {
-    return baseData.patchSize * baseData.nodeDevidePatchNum * (1 << LOD);
-}
-
-inline int GetNodeNumInLod(BaseData baseData, int LOD)
-{
-    return  floor(baseData.worldSize / GetNodeSizeByLod(baseData, LOD) + 0.1f);
-}
-
 inline float2 GetNodeCenterPos(BaseData baseData,uint2 nodeXY,int LOD)
 {
     float nodeSize = GetNodeSizeByLod(baseData, LOD);
@@ -76,12 +61,6 @@ inline float2 GetNodeCenterPos(BaseData baseData,uint2 nodeXY,int LOD)
     return nodePos;
 }
 
-inline float2 GetPatchPosInNode(BaseData baseData, uint2 xyInPatch, uint LOD)
-{
-    float patchSize = GetPatchSizeInLod(baseData, LOD);
-    float2 patchPos = patchSize * (xyInPatch + 0.5 - baseData.nodeDevidePatchNum * 0.5);
-    return patchPos;
-}
 
 inline float3 CalTerrainVertexPos(BaseData baseData, float4 vertexPos, float4 pix0, float4 pix1) 
 {

@@ -58,18 +58,6 @@ Shader "FC/Terrain_SplatMap"
                 float3 viewDirWS:TEXCOORD3;
             };
 
-            struct BaseData {
-                float3 cameraWorldPos;
-                float fov;
-                float patchSize;
-                int nodeDevidePatchNum;
-                float worldSize;
-                float worldHeightScale;
-                float lodJudgeFector;
-                float2 hizMapSize;
-                int gridNum;
-                int maxLOD;
-            };
 
             float4 _GlobalValues[10];
 
@@ -113,24 +101,12 @@ Shader "FC/Terrain_SplatMap"
 
            
 
-            #include "TerrainFunc.hlsl"
+#include "../../Script/Runtime/Envrinment/Terrain/TerrainDataStructDefine.hlsl"
+#include"../../Script/Runtime//Envrinment//Terrain//GPUTerrainFunc.hlsl"
+#include "TerrainFunc.hlsl"
 
 
-            inline BaseData GenerateBaseData(float4 valueList[10]) {
-                BaseData baseData;
-                baseData.cameraWorldPos = float3(valueList[0].x, valueList[0].y, valueList[0].z);
-                baseData.fov = valueList[0].w;
-                baseData.patchSize = valueList[1].z;
-                baseData.nodeDevidePatchNum = valueList[2].x;
-                baseData.worldSize = valueList[1].y;
-                baseData.gridNum = valueList[1].w;
-                baseData.worldHeightScale = valueList[2].z;
-                baseData.lodJudgeFector = valueList[2].y;
-                baseData.maxLOD = valueList[1].x;
-                baseData.hizMapSize.x = valueList[2].w;
-                baseData.hizMapSize.y = valueList[3].x;
-                return baseData;
-            }
+
 
             Varyings vert (Attributes input)
             {

@@ -314,6 +314,9 @@ namespace FC.Terrain{
             }
             cmd.SetComputeVectorArrayParam(GPUTerrainCS, ShaderProperties.GPUTerrain.globalValueID, globalValue);
             cmd.SetComputeVectorArrayParam(environmentSettings.grassCS, ShaderProperties.GPUTerrain.globalValueID, globalValue);
+            cmd.SetComputeFloatParam(GPUTerrainCS, ShaderProperties.GPUTerrain.boundsHeightRedundanceID, environmentSettings.boundsHeightRedundance);
+            cmd.SetComputeFloatParam(GPUTerrainCS, ShaderProperties.GPUTerrain.hizDepthBiasID, environmentSettings.hizDepthBias);
+            cmd.SetComputeVectorParam(GPUTerrainCS, ShaderProperties.GPUTerrain.hizCameraPositionWSID, mainCamera.transform.position);
         }
         public void ClearCmd()
         {

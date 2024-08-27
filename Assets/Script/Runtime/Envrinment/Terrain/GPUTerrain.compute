@@ -18,6 +18,14 @@ AppendStructuredBuffer<NodePatchData> _AppendTempList;
 AppendStructuredBuffer<NodePatchData> _FinalPatchList;
 ConsumeStructuredBuffer<NodePatchData> _ConsumeList;
 
+
+//包围盒扩展宽度，解决精度不足的问题
+float _BoundsHeightRedundance;
+
+//计算hizmap相机的位置信息
+float3 _HizCameraPositionWS;
+//hizmap的深度偏移，解决错误剔除问题
+float _HizDepthBias;
 Texture2D<float2>_MinMaxHeightMap;
 uniform float4 _GlobalValues[10];
 uniform int _NodeIndexs[10];
@@ -205,11 +213,10 @@ void GetLodTrans(inout NodePatchData patchData, BaseData baseData)
     }
 }
 
-
 bool HizCullBound(BaseData baseData, float3 minPos, float3 maxPos)
 {
-    float3 pos0 = minPos;
-    float3 pos7 = maxPos;
+    minPos -= normalize(minPos - _HizCameraPositionWS) * _HizDepthBias;;
+    maxPos  -= normalize(maxPos - _HizCameraPositionWS) * _HizDepthBias; ;
     Bound boundUVD = CalBoundUVD(baseData, minPos, maxPos);//[0,1]
     float2 objsize = float2(boundUVD.maxPos.x - boundUVD.minPos.x, boundUVD.maxPos.y - boundUVD.minPos.y);//[0,1]
     float objDepth = boundUVD.minPos.z;//[0,1]
@@ -231,7 +238,7 @@ bool HizCullBound(BaseData baseData, float3 minPos, float3 maxPos)
 }
 void CalNodeBounds(BaseData baseData, inout NodePatchData nodeData) {
     float2 height = _MinMaxHeightMap.mips[nodeData.LOD + 3][nodeData.nodeXY].xy;
-    float2 minMaxHeight = (height - 0.5) * 2 * baseData.worldHeightScale;
+    float2 minMaxHeight = (height - 0.5) * 2 * baseData.worldHeightScale+float2(-_BoundsHeightRedundance, _BoundsHeightRedundance);
     float nodeSize = GetNodeSizeByLod(baseData, nodeData.LOD);
     nodeData.boundsMax = float3(nodeSize * 0.5, minMaxHeight.y, nodeSize * 0.5);
     nodeData.boundsMin = float3(nodeSize * -0.5, minMaxHeight.x, nodeSize * -0.5);
@@ -366,7 +373,7 @@ void HizCull(uint3 id:SV_DispatchThreadID)
 
     uint2 patchUV = patchData.nodeXY * baseData.nodeDevidePatchNum + patchData.patchXY;
 
-    float2 heightRange = (_MinMaxHeightMap.mips[patchData.LOD][patchUV].xy - 0.5) * 2 * baseData.worldHeightScale;
+    float2 heightRange = (_MinMaxHeightMap.mips[patchData.LOD][patchUV].xy - 0.5) * 2 * baseData.worldHeightScale+float2(-_BoundsHeightRedundance, _BoundsHeightRedundance);
 
     GetLodTrans(patchData, baseData);
 

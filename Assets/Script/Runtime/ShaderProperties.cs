@@ -19,7 +19,11 @@ public static class ShaderProperties
         public static int hizMapID = Shader.PropertyToID("_HizMap");
         public static int instanceArgsID = Shader.PropertyToID("_InstanceArgs");
         public static int resultPatchMapID = Shader.PropertyToID("_ResultPatchMap");
+        public static int boundsHeightRedundanceID = Shader.PropertyToID("_BoundsHeightRedundance");
+        public static int hizDepthBiasID = Shader.PropertyToID("_HizDepthBias");
+        public static int hizCameraPositionWSID = Shader.PropertyToID("_HizCameraPositionWS");
 
+        //²ÄÖÊ
         public static int albedoTexNumsID = Shader.PropertyToID("_AlbedoTexNums");
         public static int normalTexNumsID = Shader.PropertyToID("_NormalTexNums");
         public static int albedoTexArrayID = Shader.PropertyToID("_AlbedoTexArray");

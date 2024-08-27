@@ -26,8 +26,8 @@ namespace FC.Terrain
     [CreateAssetMenu(menuName ="Environment/CreateSettings",fileName ="EnvironmentSettings")]
     public class EnvironmentSettings : ScriptableObject
     {
-       
 
+        [Header("地形数据")]
         public int worldSize= 10240;
 
         /// <summary>
@@ -37,6 +37,10 @@ namespace FC.Terrain
 
         public int sectorVertexs = 17;
 
+        [Tooltip("包围盒扩展范围"),Range(0,100)]
+        public int boundsHeightRedundance;
+        [Tooltip("hizmap深度偏移"), Range(0.1f, 1000)]
+        public float hizDepthBias;
         public int sectorSize =>worldSize/((1 << maxLodLevel) * nodeDevidePatch*baseLodNum);
 
         public int maxLodLevel = 5;
