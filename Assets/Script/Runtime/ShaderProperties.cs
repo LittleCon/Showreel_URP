@@ -59,4 +59,9 @@ public static class ShaderProperties
         public static int clumpParametersID = Shader.PropertyToID("_ClumpParameters");
 
     }
+
+    public struct VTFeedback
+    {
+        public static int vtFeedbackParamID = Shader.PropertyToID("_VTFeedbackParam");
+    }
 }
