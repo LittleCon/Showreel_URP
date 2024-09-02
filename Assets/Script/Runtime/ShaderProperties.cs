@@ -60,8 +60,10 @@ public static class ShaderProperties
 
     }
 
-    public struct VTFeedback
+    public struct RVT
     {
         public static int vtFeedbackParamID = Shader.PropertyToID("_VTFeedbackParam");
+        public static int vtLookupTexID = Shader.PropertyToID("_VTLookupTex");
+        public static int vtPageParamID = Shader.PropertyToID("_VTPageParam");
     }
 }
