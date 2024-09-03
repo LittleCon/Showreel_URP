@@ -23,6 +23,8 @@ public class LruCache : MonoBehaviour
     /// </summary>
     private NodeInfo tail = null;
     private NodeInfo[] allNodes;
+
+    public int First { get { return head.id; } }
     public bool SetActive(int id)
     {
         if (id < 0 || id >= allNodes.Length)

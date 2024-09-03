@@ -44,9 +44,39 @@ namespace RVTTerrain
             return success;
         }
 
+        /// <summary>
+        /// 将输入的tileIndex转换为其在物理贴图中的索引
+        /// </summary>
+        /// <param name="tile"></param>
+        /// <returns></returns>
         private int PosToId(Vector2Int tile)
         {
             return (tile.y * RegionSize.x + tile.x);
+        }
+
+        /// <summary>
+        /// 将索引转换为TileIndex
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        private Vector2Int IdToPos(int id)
+        {
+            return new Vector2Int(id % RegionSize.x, id / RegionSize.x);
+        }
+
+
+
+        public Vector2Int RequestTile()
+        {
+            return IdToPos(m_TilePool.First);
+        }
+
+        public void UpdateTile(Vector2Int tile,RenderTextureRequest request)
+        {
+            //非活跃节点
+            if (!SetActive(tile)) return;
+
+            //DodrawTexture?.Invoke(new RectInt(tile.x*Tiles))
         }
     }
 }

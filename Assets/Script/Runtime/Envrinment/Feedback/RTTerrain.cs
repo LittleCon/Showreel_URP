@@ -12,6 +12,14 @@ namespace RVTTerrain
         public ScaleFactor ChangeViewDis = ScaleFactor.Eighth;
         public PageTable pageTable;
 
+        /// <summary>
+        /// 是否启用FeedBack
+        /// </summary>
+        public bool useFeed;
+
+
+        private FeedbackRenderer feedbackRenderer;
+        private FeedbackReader feedbackReader;
         private RenderTextureJob rtJob;
 
 
@@ -55,6 +63,7 @@ namespace RVTTerrain
             RealTotalRect = new Rect(fixedCenter.x - Radius, fixedCenter.y - Radius, 2 * Radius, 2 * Radius);//fixedCenter.y - Radius属于[-1024,1024]范围为2048
 
             rtJob = new RenderTextureJob();
+            feedbackRenderer = GetComponent<FeedbackRenderer>();
         }
 
 
@@ -81,11 +90,60 @@ namespace RVTTerrain
 
                     RealTotalRect = new Rect(fixedCenter.x - Radius, fixedCenter.y - Radius, 2 * Radius,2 * Radius);
 
-                    pageTable.change
+                    //(2 * (int)Radius / pageTable.TableSize)代表一个pageTable对应的地块大小
+                    //当前rect中心点和之前中心点的距离差，需要偏移多少个pageTable中的元素
+                    //即rect发生偏移时，代表有新的页表要处于活跃状态，旧的不在范围内的页表要设置为不活跃状态
+                    pageTable.ChangeViewRect((fixedCenter - oldCenter) / (2 * (int)Radius / pageTable.TableSize));
+
+                    if (useFeed)
+                    {
+                        feedbackRenderer.FeedbackCamera.Render();
+                        feedbackReader.NewRequest(feedbackRenderer.FeedbackCamera.targetTexture,true);
+                        feedbackReader.UpdateRequest();
+                        rtJob.Update();
+                        feedbackReader.UpdateRequest();
+                    }
+                    else
+                    {
+                        pageTable.UpdatePage(GetPageSector(fixedPos, RealTotalRect));
+                        rtJob.Update();
+                        pageTable.UpdatePage(GetPageSector(fixedPos, RealTotalRect));
+
+                    }
+                    return;
                 }
+            }
+
+            if (useFeed)
+            {
+                feedbackReader.UpdateRequest();
+                if (feedbackReader.CanRead)
+                {
+                    feedbackRenderer.FeedbackCamera.Render();
+                    feedbackReader.NewRequest(feedbackRenderer.FeedbackCamera.targetTexture);
+                }
+            }
+            else
+            {
+                pageTable.UpdatePage(GetPageSector(fixedPos, realTotalRect));
             }
         }
 
+        /// <summary>
+        /// 将传入的Pos坐标转换为其在rect范围内对应的地块索引
+        /// </summary>
+        /// <param name="pos"></param>
+        /// <param name="realRect"></param>
+        /// <returns></returns>
+        private Vector2Int GetPageSector(Vector2 pos, Rect realRect)
+        {
+            var sector = new Vector2Int((int)pos.x, (int)pos.y) - new Vector2Int((int)realRect.min.x, (int)realRect.min.y);
+
+            sector.x = (int)(sector.x / CellSize);
+            sector.y = (int)(sector.y / CellSize);
+
+            return sector;
+        }
 
         /// <summary>
         /// 将输入的坐标转换为最接近的changViewDis的倍数

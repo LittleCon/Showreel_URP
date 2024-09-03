@@ -41,6 +41,13 @@ namespace RVTTerrain
         /// </summary>
         public event Action<RenderTextureRequest> startRenderJob;
 
+
+        /// <summary>
+        /// 一帧最多处理的渲染请求个数
+        /// </summary>
+        [SerializeField]
+        private int m_Limit = 2;
+
         /// <summary>
         /// 新建渲染请求
         /// </summary>
@@ -63,6 +70,28 @@ namespace RVTTerrain
             m_PendingRequests.Add(request);
 
             return request;
+        }
+
+        public void Update()
+        {
+            if (m_PendingRequests.Count <= 0)
+                return;
+
+            //优先处理Mipmap等级高的请求
+            m_PendingRequests.Sort((x, y) => { return x.mipmapLevel.CompareTo(y.mipmapLevel); });
+
+            int count = m_Limit;
+
+            while(count>0&& m_PendingRequests.Count > 0)
+            {
+                count--;
+                //将第一个请求从等待队列移动到运行队列
+                var req = m_PendingRequests[m_PendingRequests.Count - 1];
+                m_PendingRequests.RemoveAt(m_PendingRequests.Count - 1);
+
+                //开始渲染
+                startRenderJob?.Invoke(req);
+            }
         }
 
         /// <summary>

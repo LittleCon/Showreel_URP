@@ -21,6 +21,9 @@ namespace RVTTerrain
         /// </summary>
         public int mipLevel { get; }
 
+        /// <summary>
+        /// rect发生移动时，页表在xy轴上需要偏移的元素个数
+        /// </summary>
         public Vector2Int pageOffset;
 
         /// <summary>
@@ -52,7 +55,8 @@ namespace RVTTerrain
         }
 
         public void ChangeViewRect(Vector2Int offset,Action<Vector2Int> invalidatePage)
-        {        
+        {    
+            //mipmap级别越高页表数量越低，如果数量不足以支撑一个偏移，那么重新生成页表
             if(Mathf.Abs(offset.x)>=nodeCellCount|| Mathf.Abs(offset.y) >= nodeCellCount||offset.x%perCellSize!=0||offset.y%perCellSize!=0)
             {
                 for(int i = 0; i < nodeCellCount; i++)
@@ -69,8 +73,76 @@ namespace RVTTerrain
                 return;
             }
 
+            //计算偏移的元素个数
             offset.x /= perCellSize;
             offset.y /= perCellSize;
+
+            #region clipmap
+            //小于偏移量右侧的页表全部设置为不活跃状态
+            if (offset.x > 0)
+            {
+                for(int i = 0; i < offset.x; i++)
+                {
+                    for(int j = 0; j < nodeCellCount; j++)
+                    {
+                        var transXY = GetTransXY(i, j);
+                        cell[transXY.x, transXY.y].payLoad.loadRequest = null;
+                        invalidatePage(cell[transXY.x, transXY.y].payLoad.tileIndex);
+                    }
+                }
+            }else if (offset.x < 0)
+            {
+                for(int i = 0; i <= -offset.x; i++)
+                {
+                    for(int j = 0; j < nodeCellCount; j++)
+                    {
+                        var transXY = GetTransXY(nodeCellCount - i, j);
+                        cell[transXY.x, transXY.y].payLoad.loadRequest = null;
+                        invalidatePage(cell[transXY.x, transXY.y].payLoad.tileIndex);
+                    }
+                }
+            }
+
+            if (offset.y > 0)
+            {
+                for (int i = 0; i <= offset.y; i++)
+                {
+                    for (int j = 0; j < nodeCellCount; j++)
+                    {
+                        var transXY = GetTransXY(j, i);
+                        cell[transXY.x, transXY.y].payLoad.loadRequest = null;
+                        invalidatePage(cell[transXY.x, transXY.y].payLoad.tileIndex);
+                    }
+                }
+            }
+            else if (offset.y < 0)
+            {
+                for (int i = 1; i <= -offset.y; i++)
+                {
+                    for (int j = 0; j < nodeCellCount; j++)
+                    {
+                        var transXY = GetTransXY(j, nodeCellCount - i);
+                        cell[transXY.x, transXY.y].payLoad.loadRequest = null;
+                        invalidatePage(cell[transXY.x, transXY.y].payLoad.tileIndex);
+                    }
+                }
+            }
+            #endregion
+
+            pageOffset += offset;
+
+            while (pageOffset.x < 0)
+            {
+                pageOffset.x += nodeCellCount;
+            }
+
+            while (pageOffset.y < 0)
+            {
+                pageOffset.y += nodeCellCount;
+            }
+
+            pageOffset.x %= nodeCellCount;
+            pageOffset.y %= nodeCellCount;
 
         }
 
@@ -90,7 +162,7 @@ namespace RVTTerrain
 
         public int mipLevel;
 
-        
+        public RectInt Rect { get; set; }
     }
 
 }

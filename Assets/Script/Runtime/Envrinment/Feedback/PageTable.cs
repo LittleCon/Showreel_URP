@@ -1,12 +1,20 @@
 using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
+using UnityEditor.PackageManager.Requests;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace RVTTerrain
 {
     public class PageTable : MonoBehaviour
     {
+        private class DrawPageInfo
+        {
+            public Rect rect;
+            public int mip;
+            public Vector2 drawPos;
+        }
         public int TableSize { get => m_TableSize; }
         public int MaxMipLevel { get { return (int)Mathf.Log(TableSize, 2); } }
 
@@ -22,6 +30,8 @@ namespace RVTTerrain
         [SerializeField]
         private Shader m_DrawLookup = default;
 
+        [SerializeField]
+        private bool useFeed;
 
         private RenderTextureJob m_RenderTextureJob;
 
@@ -39,6 +49,9 @@ namespace RVTTerrain
         /// 用于debug
         /// </summary>
         private RenderTexture debugRT;
+
+        private Material debugMat;
+        private Shader debugShader;
 
         /// <summary>
         /// 用于绘制
@@ -85,8 +98,27 @@ namespace RVTTerrain
 
             m_TiledTexture = GetComponent<TiledTexture>();
             m_TiledTexture.onTileUpdateComplete += InvalidatePage;
+            GetComponent<FeedbackReader>().OnFeadbackReadComplete += ProcessFeedback;
 
             ActivatePage(0, 0, MaxMipLevel);
+        }
+
+
+        /// <summary>
+        /// 当Feedback回读成功后调用，用于激活对应页表
+        /// </summary>
+        /// <param name="texure"></param>
+        private void ProcessFeedback(Texture2D texture)
+        {
+            if (!useFeed) return;
+
+            foreach(var c in texture.GetRawTextureData<Color32>())
+            {
+                ActivatePage(c.r, c.g, c.b);
+
+            }
+
+            this.UpdateLookup();
         }
 
         /// <summary>
@@ -140,6 +172,24 @@ namespace RVTTerrain
         }
 
         /// <summary>
+        /// 重置pagetable函数
+        /// </summary>
+        public void Reset()
+        {
+            for(int i = 0; i <= MaxMipLevel; i++)
+            {
+                for(int j = 0; j < m_PageTable[i].nodeCellCount; j++)
+                {
+                    for(int k = 0; k < m_PageTable[i].nodeCellCount; k++)
+                    {
+                        InvalidatePage(m_PageTable[i].cell[j, k].payLoad.tileIndex);
+                    }
+                }
+            }
+
+            m_ActivePages.Clear();
+        }
+        /// <summary>
         /// 将页表设置为非活跃状态
         /// </summary>
         private void InvalidatePage(Vector2Int id)
@@ -151,9 +201,23 @@ namespace RVTTerrain
             m_ActivePages.Remove(id);
         }
 
+        /// <summary>
+        /// 渲染物理贴图
+        /// </summary>
+        /// <param name="renderTextureRequest"></param>
         public void OnRenderJob(RenderTextureRequest renderTextureRequest)
         {
 
+            //找到拥有该渲染请求的pagetable中的元素
+            var node = m_PageTable[renderTextureRequest.mipmapLevel].Get(renderTextureRequest.pageX, renderTextureRequest.pageY);
+
+            //如果元素错误返回
+            if (node == null || node.payLoad.loadRequest != renderTextureRequest)
+                return;
+
+            node.payLoad.loadRequest = null;
+
+            var id = m_TiledTexture.RequestTile();
         }
 
 
@@ -162,12 +226,122 @@ namespace RVTTerrain
 
         }
 
+        /// <summary>
+        /// 不使用feedback时更新pagetable的方法,根据所有pagetable与当前中心点的坐标距离来计算Mipmaplevel
+        /// </summary>
+        /// <param name="center"></param>
+        public void UpdatePage(Vector2Int center)
+        {
+            if (useFeed)
+                return;
+            for(int i = 0; i < TableSize; i++)
+            {
+                for(int j = 0; j < TableSize; j++)
+                {
+                    var thisPos = new Vector2Int(i, j);
+                    Vector2Int manhattanDistance = thisPos - center;
 
+                    int absX = Mathf.Abs(manhattanDistance.x);
+                    int absY = Mathf.Abs(manhattanDistance.y);
+
+                    int absMax = Mathf.Max(absX, absY);
+                    int tempMipLevel = (int)Mathf.Floor(Mathf.Sqrt(2 * absMax));
+
+                    tempMipLevel = Mathf.Clamp(tempMipLevel, 0, MaxMipLevel);
+                    ActivatePage(i, j, tempMipLevel);
+                }
+            }
+            UpdateLookup();
+        }
+
+        private void UpdateLookup()
+        {
+            var currentFrame = (byte)Time.frameCount;
+            var drawList = new List<DrawPageInfo>();
+
+            foreach(var kv in m_ActivePages)
+            {
+                var page = kv.Value;
+                //当前页表是否在当前帧活跃
+                if (page.payLoad.ActiveFrame != Time.frameCount)
+                    continue;
+                //获取当前Mipmap级别的这个页表
+                var table = m_PageTable[page.mipLevel];
+                var offset = table.pageOffset;
+                var perSize = table.perCellSize;
+
+                var lb = new Vector2Int((page.Rect.xMin - offset.x * perSize), (page.Rect.yMin - offset.y * perSize));
+
+                while (lb.x < 0)
+                {
+                    lb.x += TableSize;
+                }
+
+                while (lb.y < 0)
+                {
+                    lb.y += TableSize;
+                }
+
+                drawList.Add(new DrawPageInfo()
+                {
+                    rect = new Rect(lb.x, lb.y, page.Rect.width, page.Rect.height),
+                    mip = page.mipLevel,
+                    drawPos = new Vector2((float)page.payLoad.tileIndex.x / 255, (float)page.payLoad.tileIndex.y / 255)
+                });
+
+                drawList.Sort((a, b) =>
+                {
+                    return -(a.mip.CompareTo(b.mip));
+                });
+
+                if (drawList.Count == 0)
+                {
+                    return;
+                }
+
+                var mats = new Matrix4x4[drawList.Count];
+                var pageInfos = new Vector4[drawList.Count];
+
+                for(int i = 0; i < drawList.Count; i++)
+                {
+                    float size = drawList[i].rect.width / TableSize;
+                    mats[i] = Matrix4x4.TRS(new Vector3(drawList[i].rect.x / TableSize, drawList[i].rect.y / TableSize), Quaternion.identity, new Vector3(size, size, size));
+
+                    pageInfos[i] = new Vector4(drawList[i].drawPos.x, drawList[i].drawPos.y, drawList[i].mip/255);
+                }
+
+                Graphics.SetRenderTarget(m_LookTexture);
+                var tempCB = new CommandBuffer();
+
+                var block = new MaterialPropertyBlock();
+
+                block.SetVectorArray("_PageInfo", pageInfos);
+                block.SetMatrixArray("_ImageMVP", mats);
+
+                tempCB.DrawMeshInstanced(m_Quad, 0, drawLookupMat, 0, mats, mats.Length, block);
+                Graphics.ExecuteCommandBuffer(tempCB);
+                UpdateDebugTexture();
+            }
+        }
+
+        private void UpdateDebugTexture()
+        {
+#if UNITY_EDITOR
+            if (m_LookTexture == null || debugShader == null)
+                return;
+
+            if (debugMat == null)
+                debugMat = new Material(debugShader);
+
+            debugRT.DiscardContents();
+            Graphics.Blit(m_LookTexture, debugRT, debugMat);
+#endif
+        }
         public void ChangeViewRect(Vector2Int offset)
         {
             for(int i = 0; i < MaxMipLevel; i++)
             {
-                m_PageTable[i].
+                m_PageTable[i].ChangeViewRect(offset, InvalidatePage);
             }
 
             ActivatePage(0, 0, MaxMipLevel);
