@@ -87,7 +87,7 @@ namespace RVTTerrain
 
             var virtualTable = GetComponent(typeof(PageTable)) as PageTable;
 
-            Shader.SetGlobalVector(ShaderProperties.VTFeedback.vtFeedbackParamID, new Vector4(
+            Shader.SetGlobalVector(ShaderProperties.RVT.vtFeedbackParamID, new Vector4(
                 virtualTable.TableSize, virtualTable.TableSize * tileTexture.TileSize * scale,
                 virtualTable.MaxMipLevel - 1, m_MipmapBias));
         }

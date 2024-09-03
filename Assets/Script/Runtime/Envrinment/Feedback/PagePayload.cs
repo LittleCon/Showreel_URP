@@ -14,6 +14,10 @@ namespace RVTTerrain
         /// </summary>
         private static Vector2Int s_InvalidTileIndex = new Vector2Int(-1, -1);
 
+        /// <summary>
+        /// 激活的帧序号
+        /// </summary>
+        public int ActiveFrame;
 
         /// <summary>
         /// 代表默认元素都是非活跃元素

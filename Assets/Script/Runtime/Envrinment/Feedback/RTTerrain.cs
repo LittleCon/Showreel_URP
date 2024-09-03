@@ -75,7 +75,13 @@ namespace RVTTerrain
                 //新的中心!=旧中心，说明需要更新PageTable及物理贴图
                 if (fixedCenter != RealTotalRect.center)
                 {
+                    rtJob.ClearJob();
 
+                    var oldCenter = new Vector2Int((int)RealTotalRect.center.x, (int)RealTotalRect.center.y);
+
+                    RealTotalRect = new Rect(fixedCenter.x - Radius, fixedCenter.y - Radius, 2 * Radius,2 * Radius);
+
+                    pageTable.change
                 }
             }
         }

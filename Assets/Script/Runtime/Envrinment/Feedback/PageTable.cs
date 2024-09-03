@@ -118,9 +118,10 @@ namespace RVTTerrain
             if (page.payLoad.isReady)
             {
                 //激活对应平铺贴图快
-                //m_TiledTexture.SetActive(page.payLoad.tileIndex);
-                //page.payLoad.ActiveFrame = Time.frameCount;
+                m_TiledTexture.SetActive(page.payLoad.tileIndex);
+                page.payLoad.ActiveFrame = Time.frameCount;
             }
+
         }
 
         /// <summary>
@@ -161,6 +162,16 @@ namespace RVTTerrain
 
         }
 
+
+        public void ChangeViewRect(Vector2Int offset)
+        {
+            for(int i = 0; i < MaxMipLevel; i++)
+            {
+                m_PageTable[i].
+            }
+
+            ActivatePage(0, 0, MaxMipLevel);
+        }
 
         private void InitDebugTexture()
         {

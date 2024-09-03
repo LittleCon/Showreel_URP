@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Mathematics;
@@ -49,6 +50,35 @@ namespace RVTTerrain
 
             return cell[x, y]; 
         }
+
+        public void ChangeViewRect(Vector2Int offset,Action<Vector2Int> invalidatePage)
+        {        
+            if(Mathf.Abs(offset.x)>=nodeCellCount|| Mathf.Abs(offset.y) >= nodeCellCount||offset.x%perCellSize!=0||offset.y%perCellSize!=0)
+            {
+                for(int i = 0; i < nodeCellCount; i++)
+                {
+                    for(int j = 0; j < nodeCellCount; j++)
+                    {
+                        var transXY = GetTransXY(i, j);
+                        cell[transXY.x, transXY.y].payLoad.loadRequest = null;
+                        invalidatePage(cell[transXY.x, transXY.y].payLoad.tileIndex);
+                    }
+                    
+                }
+                pageOffset = Vector2Int.zero;
+                return;
+            }
+
+            offset.x /= perCellSize;
+            offset.y /= perCellSize;
+
+        }
+
+        private Vector2Int GetTransXY(int x, int y)
+        {
+            return new Vector2Int((x + pageOffset.x) % nodeCellCount,
+                                  (y + pageOffset.y) % nodeCellCount);
+        }
     }
 
     /// <summary>
@@ -59,6 +89,8 @@ namespace RVTTerrain
         public PagePayload payLoad;
 
         public int mipLevel;
+
+        
     }
 
 }
