@@ -69,7 +69,7 @@ namespace RVTTerrain
         /// 当前活跃的页表
         /// </summary>
         private Dictionary<Vector2Int, TableNodeCell> m_ActivePages = new Dictionary<Vector2Int, TableNodeCell>();
-        public void Init(RenderTextureJob job, int tileCount)
+        public void Init(RenderTextureJob job)
         {
             m_RenderTextureJob = job;
 

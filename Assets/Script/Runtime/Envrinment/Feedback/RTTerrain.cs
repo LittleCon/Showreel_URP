@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Unity.VisualScripting;
 using UnityEngine;
 
 
@@ -21,6 +22,8 @@ namespace RVTTerrain
         private FeedbackRenderer feedbackRenderer;
         private FeedbackReader feedbackReader;
         private RenderTextureJob rtJob;
+
+        private Mesh m_Quad;
 
 
         private Rect realTotalRect;
@@ -54,16 +57,46 @@ namespace RVTTerrain
         private TiledTexture tiledTex;
         private float changeViewDis;
 
+        /// <summary>
+        /// TileTexture中的albedo和normal
+        /// </summary>
+        private RenderBuffer[] m_VTTileBuffer;
+
+        /// <summary>
+        /// 好像没什么用的深度图，因为m_VTTileBuffer中设置了renderbuffer没有深度，看起来像是为了凑参数用的
+        /// </summary>
+        private RenderBuffer m_DepthBuffer;
+
+        /// <summary>
+        /// 缓存物理贴图的大小
+        /// </summary>
+        private Vector2Int tileTexSize;
+
         private void Start()
         {
             pageTable = GetComponent<PageTable>();
+            feedbackRenderer = GetComponent<FeedbackRenderer>();
+            feedbackReader = GetComponent<FeedbackReader>();
+            tiledTex = GetComponent<TiledTexture>();
+            rtJob = new RenderTextureJob();
+
+            pageTable.Init(rtJob);
+            tiledTex.Init();
+            tiledTex.DoDrawTexture += DrawTexture;
+
+            
+            InitializeQuadMesh();
             //pageTable.UseFeed = UseFeed;
             changeViewDis = ScaleModeExtensions.ToFloat(ChangeViewDis) * 2 * Radius;//256
             var fixedCenter = GetFixedCenter(GetFixedPos(transform.position));//通过相机的位置找到其最接近的256的倍数,在1024地形大小下,fixedCenter仅有0,256,512,1024
             RealTotalRect = new Rect(fixedCenter.x - Radius, fixedCenter.y - Radius, 2 * Radius, 2 * Radius);//fixedCenter.y - Radius属于[-1024,1024]范围为2048
 
-            rtJob = new RenderTextureJob();
-            feedbackRenderer = GetComponent<FeedbackRenderer>();
+
+            m_VTTileBuffer = new RenderBuffer[2];
+            m_VTTileBuffer[0] = tiledTex.VTRTs[0].colorBuffer;
+            m_VTTileBuffer[1] = tiledTex.VTRTs[1].colorBuffer;
+            m_DepthBuffer = tiledTex.VTRTs[0].depthBuffer;
+            tileTexSize = new Vector2Int(tiledTex.VTRTs[0].width, tiledTex.VTRTs[0].height);
         }
 
 
@@ -130,6 +163,21 @@ namespace RVTTerrain
             rtJob.Update();
         }
 
+
+        private void DrawTexture(RectInt drawPos,RenderTextureRequest request)
+        {
+            //在物理贴图中的像素坐标
+            int x = request.pageX;
+            int y = request.pageY;
+
+            //获取该Mipmaplevel物理贴图的一个的尺寸
+            int perSize = (int)Mathf.Pow(2, request.mipmapLevel);
+
+            //像素坐标转换为二维索引
+            x = x - x % perSize;
+        }
+
+
         /// <summary>
         /// 将传入的Pos坐标转换为其在rect范围内对应的地块索引
         /// </summary>
@@ -166,6 +214,36 @@ namespace RVTTerrain
         {
             return new Vector2Int((int)Mathf.Floor(pos.x / CellSize + 0.5f) * (int)CellSize,
                                   (int)Mathf.Floor(pos.z / CellSize + 0.5f) * (int)CellSize);
+        }
+
+
+        void InitializeQuadMesh()
+        {
+            List<Vector3> quadVertexList = new List<Vector3>();
+            List<int> quadTriangleList = new List<int>();
+            List<Vector2> quadUVList = new List<Vector2>();
+
+            quadVertexList.Add(new Vector3(0, 1, 0.1f));
+            quadUVList.Add(new Vector2(0, 1));
+            quadVertexList.Add(new Vector3(0, 0, 0.1f));
+            quadUVList.Add(new Vector2(0, 0));
+            quadVertexList.Add(new Vector3(1, 0, 0.1f));
+            quadUVList.Add(new Vector2(1, 0));
+            quadVertexList.Add(new Vector3(1, 1, 0.1f));
+            quadUVList.Add(new Vector2(1, 1));
+
+            quadTriangleList.Add(0);
+            quadTriangleList.Add(1);
+            quadTriangleList.Add(2);
+
+            quadTriangleList.Add(2);
+            quadTriangleList.Add(3);
+            quadTriangleList.Add(0);
+
+            m_Quad = new Mesh();
+            m_Quad.SetVertices(quadVertexList);
+            m_Quad.SetUVs(0, quadUVList);
+            m_Quad.SetTriangles(quadTriangleList, 0);
         }
     }
 

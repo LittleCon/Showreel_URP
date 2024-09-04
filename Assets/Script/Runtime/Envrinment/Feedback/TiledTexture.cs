@@ -58,7 +58,7 @@ namespace RVTTerrain
         /// <summary>
         /// 实际物理贴图，一般长度为2，一份法线贴图一份albedo
         /// </summary>
-        private RenderTexture[] VTRTs;
+        public RenderTexture[] VTRTs;
         public void Init()
         {
             m_TilePool.Init(RegionSize.x * RegionSize.y);
@@ -75,9 +75,32 @@ namespace RVTTerrain
             VTRTs[1].wrapMode = TextureWrapMode.Clamp;
             Shader.SetGlobalTexture("_VTNormal", VTRTs[1]);
 
+
+            // 设置Shader参数
+            // x: padding偏移量
+            // y: tile有效区域的尺寸
+            // zw: 1/区域尺寸
             Shader.SetGlobalVector("_VTTileParam", new Vector4((float)PaddingSize, (float)TileSize, RegionSize.x * TileSizeWithPadding, RegionSize.y * TileSizeWithPadding));
         }
 
+        public void Reset()
+        {
+            m_TilePool.Init(RegionSize.x * RegionSize.y);
+
+            m_TilePool.Init(RegionSize.x * RegionSize.y);
+            VTRTs = new RenderTexture[2];
+
+            VTRTs[0] = new RenderTexture(RegionSize.x * TileSizeWithPadding, RegionSize.y * TileSizeWithPadding, 0);
+            VTRTs[0].useMipMap = false;
+            VTRTs[0].wrapMode = TextureWrapMode.Clamp;
+            Shader.SetGlobalTexture("_VTDiffuse", VTRTs[0]);
+
+
+            VTRTs[1] = new RenderTexture(RegionSize.x * TileSizeWithPadding, RegionSize.y * TileSizeWithPadding, 0);
+            VTRTs[1].useMipMap = false;
+            VTRTs[1].wrapMode = TextureWrapMode.Clamp;
+            Shader.SetGlobalTexture("_VTNormal", VTRTs[1]);
+        }
 
         public bool SetActive(Vector2Int tile)
         {

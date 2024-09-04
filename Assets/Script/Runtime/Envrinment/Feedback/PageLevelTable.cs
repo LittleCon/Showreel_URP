@@ -41,6 +41,17 @@ namespace RVTTerrain
             mipLevel = i;
 
             perCellSize = (int)Mathf.Pow(2, i);
+
+            nodeCellCount = tableSize / perCellSize;
+            cell = new TableNodeCell[nodeCellCount, nodeCellCount];
+
+            for(int x = 0; x < nodeCellCount; x++)
+            {
+                for(int y = 0; y < nodeCellCount; y++)
+                {
+                    cell[x, y] = new TableNodeCell(x * perCellSize, y * perCellSize, perCellSize, perCellSize, mipLevel);
+                }
+            }
         }
 
         public TableNodeCell Get(int x,int y)
@@ -163,6 +174,14 @@ namespace RVTTerrain
         public int mipLevel;
 
         public RectInt Rect { get; set; }
+
+
+        public TableNodeCell(int x,int y,int width, int height,int mip)
+        {
+            Rect = new RectInt(x, y, width, height);
+            mipLevel = mip;
+            payLoad = new PagePayload();
+        }
     }
 
 }
