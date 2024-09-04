@@ -218,12 +218,21 @@ namespace RVTTerrain
             node.payLoad.loadRequest = null;
 
             var id = m_TiledTexture.RequestTile();
+            m_TiledTexture.UpdateTile(id, renderTextureRequest);
+
+            node.payLoad.tileIndex = id;
+            m_ActivePages[id] = node;
         }
 
 
         public void OnRenderJobCancel(RenderTextureRequest renderTextureRequest)
         {
-
+            //找到拥有该渲染请求的pagetable中的元素
+            var node = m_PageTable[renderTextureRequest.mipmapLevel].Get(renderTextureRequest.pageX, renderTextureRequest.pageY);
+            //如果元素错误返回
+            if (node == null || node.payLoad.loadRequest != renderTextureRequest)
+                return;
+            node.payLoad.loadRequest = null;
         }
 
         /// <summary>

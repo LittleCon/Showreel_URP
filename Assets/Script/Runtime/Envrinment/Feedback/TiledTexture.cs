@@ -7,6 +7,11 @@ namespace RVTTerrain
 {
     public class TiledTexture : MonoBehaviour
     {
+
+        /// <summary>
+        /// 画Tile的事件.
+        /// </summary>
+        public event Action<RectInt, RenderTextureRequest> DoDrawTexture;
         /// <summary>
         /// 单个Tile的尺寸.
         /// </summary>
@@ -35,6 +40,43 @@ namespace RVTTerrain
         /// TileTexture更新完毕回调
         /// </summary>
         public event Action<Vector2Int> onTileUpdateComplete;
+
+        /// <summary>
+		/// 填充尺寸
+		/// </summary>
+		[SerializeField]
+        private int m_PaddingSize = 4;
+        /// <summary>
+		/// 填充尺寸
+		/// 每个Tile上下左右四个方向都要进行填充，用来支持硬件纹理过滤.
+		/// 所以Tile有效尺寸为(TileSize - PaddingSize * 2)
+		/// </summary>
+		public int PaddingSize { get { return m_PaddingSize; } }
+
+        public int TileSizeWithPadding { get { return TileSize + PaddingSize * 2; } }
+
+        /// <summary>
+        /// 实际物理贴图，一般长度为2，一份法线贴图一份albedo
+        /// </summary>
+        private RenderTexture[] VTRTs;
+        public void Init()
+        {
+            m_TilePool.Init(RegionSize.x * RegionSize.y);
+            VTRTs = new RenderTexture[2];
+
+            VTRTs[0] = new RenderTexture(RegionSize.x * TileSizeWithPadding, RegionSize.y * TileSizeWithPadding, 0);
+            VTRTs[0].useMipMap = false;
+            VTRTs[0].wrapMode = TextureWrapMode.Clamp;
+            Shader.SetGlobalTexture("_VTDiffuse", VTRTs[0]);
+
+
+            VTRTs[1] = new RenderTexture(RegionSize.x * TileSizeWithPadding, RegionSize.y * TileSizeWithPadding, 0);
+            VTRTs[1].useMipMap = false;
+            VTRTs[1].wrapMode = TextureWrapMode.Clamp;
+            Shader.SetGlobalTexture("_VTNormal", VTRTs[1]);
+
+            Shader.SetGlobalVector("_VTTileParam", new Vector4((float)PaddingSize, (float)TileSize, RegionSize.x * TileSizeWithPadding, RegionSize.y * TileSizeWithPadding));
+        }
 
 
         public bool SetActive(Vector2Int tile)
@@ -76,7 +118,8 @@ namespace RVTTerrain
             //非活跃节点
             if (!SetActive(tile)) return;
 
-            //DodrawTexture?.Invoke(new RectInt(tile.x*Tiles))
+            DoDrawTexture?.Invoke(new RectInt(tile.x * TileSizeWithPadding, tile.y * TileSizeWithPadding, TileSizeWithPadding, TileSizeWithPadding),request);
+            onTileUpdateComplete?.Invoke(tile);
         }
     }
 }

@@ -127,6 +127,7 @@ namespace RVTTerrain
             {
                 pageTable.UpdatePage(GetPageSector(fixedPos, realTotalRect));
             }
+            rtJob.Update();
         }
 
         /// <summary>

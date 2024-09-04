@@ -5,7 +5,7 @@ using UnityEngine;
 public class LruCache : MonoBehaviour
 {
     /// <summary>
-    /// TileTexture的节点类
+    /// TileTexture的节点类，通过链表管理
     /// </summary>
     public class NodeInfo
     {
@@ -25,6 +25,27 @@ public class LruCache : MonoBehaviour
     private NodeInfo[] allNodes;
 
     public int First { get { return head.id; } }
+
+    public void Init(int count)
+    {
+        allNodes = new NodeInfo[count];
+        for(int i = 0; i < count; i++)
+        {
+            allNodes[i] = new NodeInfo() { id=i};
+        }
+
+        //构建链表
+        for(int i = 0; i < count; i++)
+        {
+            //判断是否是队尾，队尾元素为null
+            allNodes[i].Next = (i + 1 < count) ? allNodes[i + 1] : null;
+            //判断是否是队首
+            allNodes[i].Prev = (i != 0) ? allNodes[i - 1] : null;
+        }
+
+        head = allNodes[0];
+        tail = allNodes[count - 1];
+    }
     public bool SetActive(int id)
     {
         if (id < 0 || id >= allNodes.Length)
