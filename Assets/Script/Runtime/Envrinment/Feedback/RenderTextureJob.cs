@@ -11,8 +11,14 @@ namespace RVTTerrain
     /// </summary>
     public class RenderTextureRequest
     {
+        /// <summary>
+        /// pageTable中的像素x
+        /// </summary>
         public int pageX;
 
+        /// <summary>
+        /// pageTable中的像素y
+        /// </summary>
         public int pageY;
 
         public int mipmapLevel;

@@ -166,15 +166,20 @@ namespace RVTTerrain
 
         private void DrawTexture(RectInt drawPos,RenderTextureRequest request)
         {
-            //在物理贴图中的像素坐标
+            //pageTable中的像素，pageTable一个像素对应一个tileTexture，因此这里也代表tileTexture中的二维坐标（按个数划分的）
             int x = request.pageX;
             int y = request.pageY;
 
             //获取该Mipmaplevel物理贴图的一个的尺寸
             int perSize = (int)Mathf.Pow(2, request.mipmapLevel);
 
-            //像素坐标转换为二维索引
+            //向下取整获取最接近perSize的x、y
             x = x - x % perSize;
+            y = y - x % perSize;
+
+            var tableSize = pageTable.TableSize;//256
+            //计算填充效果，用于调整绘制区域的大小以避免纹理接缝。
+            var paddingEffect = tiledTex.PaddingSize*perSize* (realTotalRect.width / tableSize) / tiledTex.TileSize;
         }
 
 
