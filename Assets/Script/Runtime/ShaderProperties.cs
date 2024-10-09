@@ -65,5 +65,8 @@ public static class ShaderProperties
         public static int vtFeedbackParamID = Shader.PropertyToID("_VTFeedbackParam");
         public static int vtLookupTexID = Shader.PropertyToID("_VTLookupTex");
         public static int vtPageParamID = Shader.PropertyToID("_VTPageParam");
+        public static int vtTileTexMVPID = Shader.PropertyToID("_VTTileTexMVPID");
+        public static int tileTexScaleOffset = Shader.PropertyToID("_TileTexScaleOffset");
+        public static int tileOffset = Shader.PropertyToID("_TileOffset");
     }
 }

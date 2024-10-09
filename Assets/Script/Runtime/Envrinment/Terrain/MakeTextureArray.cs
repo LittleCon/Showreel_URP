@@ -27,6 +27,10 @@ public class MakeTextureArray : MonoBehaviour
 
     public EnvironmentSettings environmentSettings;
 
+    [Tooltip("Splat是否是RGB通道")]
+    public bool isRGBSplat;
+
+    public int splatRGBnums;
     struct LayerWeight
     {
         public int index;
@@ -80,19 +84,36 @@ public class MakeTextureArray : MonoBehaviour
             };
 
             var tileIndex = new int2[width * height];
-            var weights = new LayerWeight[splatCount];
+            var weights = new LayerWeight[isRGBSplat?splatCount* splatRGBnums: splatCount];
             var weightVal = new int[width * height];
             var count = 0;
             for (int i = 0; i < width; i++)
             {
                 for (int j = 0; j < height; j++)
                 {
-                    for (int k = 0; k < splatCount; k++)
+                    if (isRGBSplat) 
                     {
-                        int splatIndex = k;
-                        weights[k].weight = splatMaps[splatIndex].GetPixel(i, j).r;
-                        weights[k].index = k;
+                        for (int k = 0; k < splatMaps.Count; k++)
+                        {
+                            int splatIndex = k;
+                            weights[k*splatRGBnums].weight = splatMaps[splatIndex].GetPixel(i, j)[0];
+                            weights[k * splatRGBnums +1].weight = splatMaps[splatIndex].GetPixel(i, j)[1];
+                            weights[k * splatRGBnums +2].weight = splatMaps[splatIndex].GetPixel(i, j)[2];
+                            weights[k * splatRGBnums ].index = k * splatRGBnums;
+                            weights[k * splatRGBnums + 1].index = k * splatRGBnums + 1;
+                            weights[k * splatRGBnums + 2].index = k * splatRGBnums  + 2;
+                        }
                     }
+                    else
+                    {
+                        for (int k = 0; k < splatCount; k++)
+                        {
+                            int splatIndex = k;
+                            weights[k].weight = splatMaps[splatIndex].GetPixel(i, j).r;
+                            weights[k].index = k;
+                        }
+                    }
+                    
                     Array.Sort(weights, (a, b) => { return -a.weight.CompareTo(b.weight); });
 
                     var tw = 0f;

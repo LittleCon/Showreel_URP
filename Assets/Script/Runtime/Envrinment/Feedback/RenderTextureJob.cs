@@ -35,7 +35,7 @@ namespace RVTTerrain
     /// </summary>
     public class RenderTextureJob
     {
-        private List<RenderTextureRequest> m_PendingRequests;
+        private List<RenderTextureRequest> m_PendingRequests = new List<RenderTextureRequest>();
 
         /// <summary>
         /// 渲染请求取消回调事件

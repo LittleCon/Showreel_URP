@@ -1,14 +1,17 @@
+using FC.Terrain;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.VisualScripting;
 using UnityEngine;
-
+using UnityEngine.Rendering;
 
 namespace RVTTerrain
 {
     public class RTTerrain : MonoBehaviour
     {
+
+        public EnvironmentSettings environmentSettings;
         public float Radius = 500;
         public ScaleFactor ChangeViewDis = ScaleFactor.Eighth;
         public PageTable pageTable;
@@ -24,6 +27,7 @@ namespace RVTTerrain
         private RenderTextureJob rtJob;
 
         private Mesh m_Quad;
+        private MakeTextureArray textureArray;
 
 
         private Rect realTotalRect;
@@ -72,19 +76,27 @@ namespace RVTTerrain
         /// </summary>
         private Vector2Int tileTexSize;
 
+
+        /// <summary>
+        /// 用于绘制物理贴图的材质球
+        /// </summary>
+        private Material m_DrawTextureMaterial;
+
+        private Shader m_DrawTextureShader;
+
         private void Start()
         {
             pageTable = GetComponent<PageTable>();
             feedbackRenderer = GetComponent<FeedbackRenderer>();
             feedbackReader = GetComponent<FeedbackReader>();
             tiledTex = GetComponent<TiledTexture>();
+            textureArray = GetComponentInParent<MakeTextureArray>();
             rtJob = new RenderTextureJob();
 
             pageTable.Init(rtJob);
             tiledTex.Init();
             tiledTex.DoDrawTexture += DrawTexture;
 
-            
             InitializeQuadMesh();
             //pageTable.UseFeed = UseFeed;
             changeViewDis = ScaleModeExtensions.ToFloat(ChangeViewDis) * 2 * Radius;//256
@@ -163,7 +175,11 @@ namespace RVTTerrain
             rtJob.Update();
         }
 
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="drawPos">mipmap0的一个物理贴图的尺寸（包括padding）</param>
+        /// <param name="request"></param>
         private void DrawTexture(RectInt drawPos,RenderTextureRequest request)
         {
             //pageTable中的像素，pageTable一个像素对应一个tileTexture，因此这里也代表tileTexture中的二维坐标（按个数划分的）
@@ -174,14 +190,83 @@ namespace RVTTerrain
             int perSize = (int)Mathf.Pow(2, request.mipmapLevel);
 
             //向下取整获取最接近perSize的x、y
+            //因为xy都是mipmap0时计算出来的pagetable坐标，
             x = x - x % perSize;
-            y = y - x % perSize;
+            y = y - y % perSize;
 
             var tableSize = pageTable.TableSize;//256
-            //计算填充效果，用于调整绘制区域的大小以避免纹理接缝。
+            //计算不同mipmap时对应填充区域的大小
             var paddingEffect = tiledTex.PaddingSize*perSize* (realTotalRect.width / tableSize) / tiledTex.TileSize;
-        }
 
+            //当前绘制的物理贴图在实际地形上的位置和大小（本质就是从feedback中还原出位置信息，当然是经过mipmap处理过）
+            var realRect = new Rect(realTotalRect.xMin + (float)x / tableSize * realTotalRect.width - paddingEffect,
+                realTotalRect.yMin + (float)y / tableSize * realTotalRect.height - paddingEffect,
+                realTotalRect.width / tableSize * perSize + 2f * paddingEffect,
+                realTotalRect.width / tableSize * perSize + 2f * paddingEffect);
+
+            //实际地形的rect
+            var terRect = Rect.zero;
+
+            terRect.xMin = -environmentSettings.worldSize * 0.5f;
+            terRect.yMin = -environmentSettings.worldSize * 0.5f;
+            terRect.width = environmentSettings.worldSize;
+            terRect.height = environmentSettings.worldSize;
+
+            //防止绘制区域超出地形范围
+            var needDrawRect = realRect;
+            needDrawRect.xMin = Mathf.Max(realRect.xMin, terRect.xMin);
+            needDrawRect.yMin = Mathf.Max(realRect.yMin, terRect.yMin);
+            needDrawRect.xMax = Mathf.Min(realRect.xMax, terRect.xMax);
+            needDrawRect.yMax = Mathf.Min(realRect.yMax, terRect.yMax);
+
+            //mipmap0和实际区域的大小比值
+            var scaleFactor = drawPos.width / realRect.width;
+
+            //代表其在物理贴图中的坐标和大小
+            //(needDrawRect.xMin - realRect.xMin)不相等的情况是有多个大地快的时候
+            var position = new Rect(drawPos.x + (needDrawRect.xMin - realRect.xMin) * scaleFactor,
+                drawPos.y+(needDrawRect.yMin-realRect.yMin)*scaleFactor,
+                needDrawRect.width * scaleFactor, needDrawRect.height * scaleFactor);
+
+            //用来调整splatmap？
+            var scaleOffset = new Vector4(needDrawRect.width / terRect.width, needDrawRect.height / terRect.height,
+                (needDrawRect.xMin - terRect.xMin) / terRect.width, (needDrawRect.yMin - terRect.yMin) / terRect.height);
+
+            //将当前position进行归一化，也就是这个物理贴图块在整个物理贴图中的uv坐标
+            float l = position.x * 2.0f / tileTexSize.x - 1;
+            float r = (position.x + position.width) / tileTexSize.x - 1;
+            float b = position.y * 2.0f / tileTexSize.y - 1;
+            float t = (position.y + position.height) / tileTexSize.y - 1;
+            var mat = new Matrix4x4();
+            mat.m00 = r - l;
+            mat.m03 = l;
+            mat.m11 = t - b;
+            mat.m13 = b;
+            mat.m23 = -1;
+            mat.m33 = 1;
+
+            Graphics.SetRenderTarget(m_VTTileBuffer, m_DepthBuffer);
+            m_DrawTextureMaterial.SetMatrix(ShaderProperties.RVT.vtTileTexMVPID, GL.GetGPUProjectionMatrix(mat, true));
+            m_DrawTextureMaterial.SetVector(ShaderProperties.RVT.tileTexScaleOffset, scaleOffset);
+
+            //遮罩纹理相对于地形纹理的缩放(uv的缩放就放在shader里面了）
+            var tileOffset = new Vector4(terRect.width / scaleOffset.x, terRect.height / scaleOffset.y,
+                scaleOffset.z * terRect.width, scaleOffset.w * terRect.height);
+            m_DrawTextureMaterial.SetVector(ShaderProperties.RVT.tileOffset, tileOffset);
+            var tempCB = new CommandBuffer();
+            tempCB.DrawMesh(m_Quad, Matrix4x4.identity, m_DrawTextureMaterial, 0);
+            Graphics.ExecuteCommandBuffer(tempCB);//DEBUG
+        }
+        public void Rest()
+        {
+            tiledTex.Reset();
+            m_VTTileBuffer = new RenderBuffer[2];
+            m_VTTileBuffer[0] = tiledTex.VTRTs[0].colorBuffer;
+            m_VTTileBuffer[1] = tiledTex.VTRTs[1].colorBuffer;
+            m_DepthBuffer = tiledTex.VTRTs[0].depthBuffer;
+            tileTexSize = new Vector2Int(tiledTex.VTRTs[0].width, tiledTex.VTRTs[0].height);
+            pageTable.Reset();
+        }
 
         /// <summary>
         /// 将传入的Pos坐标转换为其在rect范围内对应的地块索引

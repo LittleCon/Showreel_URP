@@ -331,7 +331,7 @@ namespace FC.Terrain{
 
 
         /// <summary>
-        /// 创建基础的5x5地形
+        /// 创建基础的nxn地形
         /// </summary>
         public void CreateBaseNode() {
             cmd.SetBufferCounterValue(appendTempBuffer1, 0);

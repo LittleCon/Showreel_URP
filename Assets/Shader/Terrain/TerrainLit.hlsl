@@ -36,25 +36,9 @@ Varyings vert(Attributes input)
 
 float4 frag(Varyings input) : SV_Target
 {
-    // sample the texture
-    //float4 col = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap,input.uv);
-    //float4 normal = SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap,input.normalUV);
-    //float4 splatMask= SAMPLE_TEXTURE2D(_SplatMap, sampler_SplatMap,input.normalUV);
-    //normal = 2.0 * normal - 1.0;
-    //Light lightData=GetMainLight();
-    //
-
-    //float3 diffuseColor =lightData.color*(max(0,dot( lightData.direction,normal))*0.5+0.5)*col.xyz;
-    //float3 viewDir = normalize(_WorldSpaceCameraPos.xyz-input.positionWS);
-
-    //float halfDir = normalize(lightData.direction+viewDir);
-
-    //float3 specularColor = 0;//lightData.color* pow(saturate(dot(normal , halfDir)),1000);
-    //float4 finalColor = float4(diffuseColor+specularColor,1);
-    //return finalColor;
-
+   
     //1024认为是albedo贴图的尺寸
-    float2 texUV = input.normalUV * 1024 / 30 * 3;
+    float2 texUV = input.normalUV * 1024 / 30* 3;
     float texSize = _AlphaMapSize.x;//高度图的宽度
     float texNei = _AlphaMapSize.y;//高度图宽度分之一
 

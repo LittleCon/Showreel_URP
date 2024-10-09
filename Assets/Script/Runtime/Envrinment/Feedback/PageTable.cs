@@ -71,6 +71,8 @@ namespace RVTTerrain
         private Dictionary<Vector2Int, TableNodeCell> m_ActivePages = new Dictionary<Vector2Int, TableNodeCell>();
         public void Init(RenderTextureJob job)
         {
+            m_TiledTexture = GetComponent<TiledTexture>();
+
             m_RenderTextureJob = job;
 
             m_RenderTextureJob.startRenderJob += OnRenderJob;
@@ -96,7 +98,6 @@ namespace RVTTerrain
             InitDebugTexture();
             InitializeQuadMesh();
 
-            m_TiledTexture = GetComponent<TiledTexture>();
             m_TiledTexture.onTileUpdateComplete += InvalidatePage;
             GetComponent<FeedbackReader>().OnFeadbackReadComplete += ProcessFeedback;
 
