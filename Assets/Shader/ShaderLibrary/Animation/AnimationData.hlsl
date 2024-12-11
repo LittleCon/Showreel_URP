@@ -1,0 +1,7 @@
+#ifndef ANMATIONDATA_INPUT
+#define ANMATIONDATA_INPUT
+
+
+
+
+#endif

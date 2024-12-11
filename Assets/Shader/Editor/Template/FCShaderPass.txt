@@ -1,0 +1,33 @@
+#ifndef FC_#FILENAME#_PASS_INCLUDED
+#define FC_#FILENAME#_PASS_INCLUDED
+struct Attributes
+{
+    float4 positionOS : POSITION;
+    float4 normalOS   :NORMAL;
+    float4 tangentOS   :TANGENT;
+    float2 uv : TEXCOORD0;
+};
+
+struct Varyings
+{
+    float2 uv : TEXCOORD0;
+    float4 positionCS : SV_POSITION;
+};
+
+           
+
+Varyings vert (Attributes input)
+{
+    Varyings output;
+    VertexPositionInputs positionInputs = GetVertexPositionInputs(input.positionOS);
+    output.positionCS = positionInputs.positionCS;
+    output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+    return output;
+}
+
+float4 frag (Varyings input) : SV_Target
+{
+    float4 col = SAMPLE_TEXTURE2D(_BaseMap,sampler_BaseMap,input.uv);
+    return col;
+}
+#endif
