@@ -15,7 +15,6 @@ Shader "Custom/DepthTextureMipmapCalculator"
                 #pragma fragment frag
                 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
                 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
-                #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl" 
 
          
                 sampler2D _MainTex;

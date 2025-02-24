@@ -8,14 +8,15 @@ using UnityEngine.Rendering;
 using UnityEngine.UIElements;
 using static Unity.Burst.Intrinsics.X86.Avx;
 
-namespace FC.Terrain{
-    public class TerrainCreateImpl 
+namespace FC.Terrain
+{
+    public class TerrainCreateImpl
     {
 
-        //存储每级LOD的Node起始索引
+        //?????LOD??Node???????
         private EnvironmentSettings environmentSettings;
         private ComputeShader GPUTerrainCS;
-        //草地渲染
+        //??????
         private GrassGenerate grassGenerater;
         private Camera mainCamera;
         private Plane[] frustumPalnes = new Plane[6];
@@ -27,11 +28,11 @@ namespace FC.Terrain{
         private Bounds worldBound;
 
         /// <summary>
-        /// Hiz剔除后的结果
+        /// Hiz????????
         /// </summary>
         private RenderTexture resultPatchMap;
 
-        #region computeShader函数索引
+        #region computeShader????????
         private int createPathLODKernelID;
         private int createBaseNodeKernelID;
         private int createNodeLodMapKernelID;
@@ -45,38 +46,38 @@ namespace FC.Terrain{
         private CommandBuffer cmd;
 
         /// <summary>
-        /// 每级Node的开始下标开始索引
+        /// ???Node?????卤??????
         /// </summary>
         private ComputeBuffer nodeLodIndexBuffer;
 
         /// <summary>
-        /// 用于ComputeShader中暂存Node数据及传递数据的Buffer
+        /// ????ComputeShader?????Node??????????????Buffer
         /// </summary>
         private ComputeBuffer appendTempBuffer1;
         /// <summary>
-        /// 用于ComputeShader中暂存Node数据及传递数据的Buffer
+        /// ????ComputeShader?????Node??????????????Buffer
         /// </summary>
         private ComputeBuffer appendTempBuffer2;
 
         /// <summary>
-        /// 存储当前所有Node的节点的划分状态
+        /// ?????????Node??????????
         /// </summary>
         private ComputeBuffer NodeBrunchList;
 
         /// <summary>
-        /// 最终需要加载的所有Patch
+        /// ????????????????Patch
         /// </summary>
         private ComputeBuffer finaPatchlList;
 
         /// <summary>
-        /// 线程组参数Buffer
+        /// ????????Buffer
         /// </summary>
         private ComputeBuffer dispatchArgs;
 
         uint[] dispatchArgsData = new uint[3] { 1, 1, 1 };
 
         /// <summary>
-        /// 存储NodeLod信息的纹理
+        /// ??NodeLod?????????
         /// </summary>
         private RenderTexture SectorLODMap;
 
@@ -86,7 +87,7 @@ namespace FC.Terrain{
 
 #if UNITY_EDITOR
         /// <summary>
-        /// 编辑状态下看某个Buffer实际长度
+        /// ??????????Buffer??????
         /// </summary>
         private ComputeBuffer lengthLogBuffer;
 #endif
@@ -101,13 +102,14 @@ namespace FC.Terrain{
                 {
                     for (int i = 0; i <= environmentSettings.maxLodLevel; i++)
                     {
-                        _nodeIndexOffsetList.Add(GetNodeIndexOffset(i));
+                        var value = GetNodeIndexOffset(i);
+                        _nodeIndexOffsetList.Add(value);
                     }
                 }
                 return _nodeIndexOffsetList;
             }
         }
-        public TerrainCreateImpl(Camera camera,EnvironmentSettings environmentSettings,ComputeShader computeShader)
+        public TerrainCreateImpl(Camera camera, EnvironmentSettings environmentSettings, ComputeShader computeShader)
         {
             cmd = new();
             cmd.name = "GPUTerrain";
@@ -124,7 +126,7 @@ namespace FC.Terrain{
         }
 
         /// <summary>
-        /// 制定Lod级别上的Node边长
+        /// ???Lod???????Node???
         /// </summary>
         /// <param name="LOD"></param>
         /// <returns></returns>
@@ -134,16 +136,16 @@ namespace FC.Terrain{
         }
 
         /// <summary>
-        /// 获取某个LOD级别，Terrain在一个维度上NODE的数量。
+        /// ??????LOD????Terrain??????????NODE????????
         /// </summary>
         /// <param name="LOD"></param>
         /// <returns></returns>
         public int GetNodeNumInLod(int LOD)
         {
-            return Mathf.FloorToInt(environmentSettings.worldSize / GetNodeSizeInLod(LOD) + 0.1f) ;
+            return Mathf.FloorToInt(environmentSettings.worldSize / GetNodeSizeInLod(LOD) + 0.1f);
         }
 
-        private void InitKernelIndex() 
+        private void InitKernelIndex()
         {
             createBaseNodeKernelID = GPUTerrainCS.FindKernel("CreateBaseNode");
             createPathLODKernelID = GPUTerrainCS.FindKernel("CreatePathLodList");
@@ -158,17 +160,17 @@ namespace FC.Terrain{
             int result = 0;
             for (int i = 0; i < LOD; i++)
             {
-                int nodenum = GetNodeNumInLod(i)* GetNodeNumInLod(i);
-                result += nodenum * nodenum;
+                int nodenum = GetNodeNumInLod(i) * GetNodeNumInLod(i);
+                result += nodenum;
             }
             return result;
         }
 
         /// <summary>
-        /// 创建地形网格
+        /// ????????????
         /// </summary>
-        /// <param name="size">网格大小</param>
-        /// <param name="gridNum">网格顶点数(奇数)</param>
+        /// <param name="size">?????小</param>
+        /// <param name="gridNum">???????(????)</param>
         /// <returns></returns>
         public Mesh CreateQuadMesh(Vector2 size, Vector2Int gridNum)
         {
@@ -240,13 +242,13 @@ namespace FC.Terrain{
                 GPUTerrainCS.DisableKeyword("_OPENGL_ES_3");
             }
 
-            //需要先计算出Buffer可能存放的最大数据，即World划分为6级LOD时最多具有的Node数量
+            //?????????Buffer?????????????????World?????6??LOD??????械?Node????
             int totalNodeNum = 0;
             for (int i = 5; i >= 0; i--)
             {
-                totalNodeNum += GetNodeNumInLod(i)* GetNodeNumInLod(i);
+                totalNodeNum += GetNodeNumInLod(i) * GetNodeNumInLod(i);
             }
-            //计算最多具有的Patch数量
+            //?????????械?Patch????
             int allPatchNum = GetNodeNumInLod(0) * GetNodeNumInLod(0);
 
             finaPatchlList = new(allPatchNum, NodePatchData.GetSize(), ComputeBufferType.Append);
@@ -256,7 +258,7 @@ namespace FC.Terrain{
 
             dispatchArgs = new ComputeBuffer(3, sizeof(uint), ComputeBufferType.IndirectArguments);
 
-         
+
             nodeLodIndexBuffer = new ComputeBuffer(environmentSettings.maxLodLevel + 1, sizeof(int));
             nodeLodIndexBuffer.SetData(nodeIndexOffsetList);
 
@@ -276,19 +278,19 @@ namespace FC.Terrain{
             SectorLODMap.Create();
 
             instanceArgsBuffer = new ComputeBuffer(5, sizeof(uint), ComputeBufferType.IndirectArguments);
-            terrainMesh = CreateQuadMesh(Vector2.one*(int)environmentSettings.sectorSize,environmentSettings.sectorVertexs*Vector2Int.one);
+            terrainMesh = CreateQuadMesh(Vector2.one * (int)environmentSettings.sectorSize, environmentSettings.sectorVertexs * Vector2Int.one);
             instanceArgsData = new uint[] { 0, 0, 0, 0, 0 };
             instanceArgsData[0] = terrainMesh.GetIndexCount(0);
             instanceArgsBuffer.SetData(instanceArgsData);
 
-            //rt尺寸代表了最多支持多少个物体？
+            //rt??????????????????????
             RenderTextureDescriptor renderPatchMapDesc = new RenderTextureDescriptor(512, 512, RenderTextureFormat.ARGBFloat, 0, 1);
             renderPatchMapDesc.enableRandomWrite = true;
             resultPatchMap = RenderTexture.GetTemporary(renderPatchMapDesc);
             resultPatchMap.filterMode = FilterMode.Point;
             resultPatchMap.Create();
 
-            worldBound = new Bounds(Vector3.zero,new Vector3(environmentSettings.worldSize, environmentSettings.worldSizeScale, environmentSettings.worldSize));
+            worldBound = new Bounds(Vector3.zero, new Vector3(environmentSettings.worldSize, environmentSettings.worldSizeScale, environmentSettings.worldSize));
 
 
 #if UNITY_EDITOR
@@ -326,14 +328,15 @@ namespace FC.Terrain{
         public void ExectCmd()
         {
             Graphics.ExecuteCommandBuffer(cmd);
-            
+
         }
 
 
         /// <summary>
-        /// 创建基础的nxn地形
+        /// ??????????5x5????
         /// </summary>
-        public void CreateBaseNode() {
+        public void CreateBaseNode()
+        {
             cmd.SetBufferCounterValue(appendTempBuffer1, 0);
             cmd.SetComputeBufferParam(GPUTerrainCS, createBaseNodeKernelID, ShaderProperties.GPUTerrain.appendTempListID, appendTempBuffer1);
 
@@ -351,11 +354,12 @@ namespace FC.Terrain{
             //var debugNodeData = new NodePatchData[25];
             //appendTempBuffer1.GetData(debugNodeData);
         }
+        int[] result2222 = new int[21840];
 
-        public  NodePatchData[] debugNodeData;
+        public NodePatchData[] debugNodeData;
 
         /// <summary>
-        /// 生成四叉树Node结果
+        /// ?????????Node???
         /// </summary>
         public void CreateLodNodeList()
         {
@@ -387,18 +391,23 @@ namespace FC.Terrain{
                 appendTempBuffer1 = appendTempBuffer2;
                 appendTempBuffer2 = temp;
             }
+
+            NodeBrunchList.GetData(result2222);
 #if UNITY_EDITOR
             if (EnvironmentManagerSystem.Instance.debugAllNode)
             {
 
                 cmd.CopyCounterValue(finaPatchlList, lengthLogBuffer, 0);
+                
             }
 #endif
         }
+
+
         /// <summary>
-        /// 为finalList中所有Node创建一个Tex记录其Lod信息
+        /// ?finalList??????Node???????Tex?????Lod???
         /// </summary>
-        public void CreateNodeLodMap() 
+        public void CreateNodeLodMap()
         {
             int nodeNumLod0 = GetNodeNumInLod(0);
             cmd.SetComputeBufferParam(GPUTerrainCS, createNodeLodMapKernelID, ShaderProperties.GPUTerrain.nodeBrunchListID, NodeBrunchList);
@@ -408,9 +417,9 @@ namespace FC.Terrain{
 
 
         /// <summary>
-        /// 对Node节点进行视锥剔除
+        /// ??Node????????????
         /// </summary>
-        public void NodeFrustumCull() 
+        public void NodeFrustumCull()
         {
             cmd.CopyCounterValue(finaPatchlList, dispatchArgs, 0);
 
@@ -423,16 +432,16 @@ namespace FC.Terrain{
             if (EnvironmentManagerSystem.Instance.debugAfterFrustumNode)
             {
                 cmd.CopyCounterValue(appendTempBuffer1, lengthLogBuffer, 0);
-               
+
             }
 #endif
         }
 
 
         /// <summary>
-        /// 将Node扩展成为Patch
+        /// ??Node??????Patch
         /// </summary>
-        public void NodeConvertToPatch() 
+        public void NodeConvertToPatch()
         {
 
             cmd.SetBufferCounterValue(appendTempBuffer2, 0);
@@ -452,14 +461,14 @@ namespace FC.Terrain{
 #if UNITY_EDITOR
             if (EnvironmentManagerSystem.Instance.debugPatch)
             {
-                
+
                 cmd.CopyCounterValue(appendTempBuffer2, lengthLogBuffer, 0);
-               
+
             }
 #endif
         }
 
-        public void HizMapCull() 
+        public void HizMapCull()
         {
             projcetMatrix = GL.GetGPUProjectionMatrix(mainCamera.projectionMatrix, false);
             vpMatrix = projcetMatrix * mainCamera.worldToCameraMatrix;
@@ -471,16 +480,16 @@ namespace FC.Terrain{
             cmd.SetComputeBufferParam(GPUTerrainCS, hizCullKernelID, ShaderProperties.GPUTerrain.instanceArgsID, instanceArgsBuffer);
             cmd.SetComputeBufferParam(GPUTerrainCS, hizCullKernelID, ShaderProperties.GPUTerrain.consumeListID, appendTempBuffer2);
             cmd.SetComputeTextureParam(GPUTerrainCS, hizCullKernelID, ShaderProperties.GPUTerrain.minMaxHeightMapID, environmentSettings.heightMap);
-            cmd.SetComputeTextureParam(GPUTerrainCS, hizCullKernelID, ShaderProperties.GPUTerrain.resultPatchMapID,resultPatchMap);
+            cmd.SetComputeTextureParam(GPUTerrainCS, hizCullKernelID, ShaderProperties.GPUTerrain.resultPatchMapID, resultPatchMap);
             cmd.SetComputeTextureParam(GPUTerrainCS, hizCullKernelID, ShaderProperties.GPUTerrain.sectorLODMapID, SectorLODMap);
             cmd.SetComputeTextureParam(GPUTerrainCS, hizCullKernelID, ShaderProperties.GPUTerrain.hizMapID, environmentSettings.hizMap);
 
-            //草渲染
+            //?????
             cmd.SetBufferCounterValue(appendTempBuffer1, 0);
             cmd.SetComputeBufferParam(GPUTerrainCS, hizCullKernelID, ShaderProperties.GPUTerrain.appendTempListID, appendTempBuffer1);
 
             cmd.DispatchCompute(GPUTerrainCS, hizCullKernelID, dispatchArgs, 0);
-            
+
         }
 
         public void GrassPatchFilter()
@@ -495,7 +504,7 @@ namespace FC.Terrain{
 
         public void GenerateGrass()
         {
-           // grassGenerater.DrawGrass(cmd, appendTempBuffer2);
+            // grassGenerater.DrawGrass(cmd, appendTempBuffer2);
         }
 
         public void SetKeyWorld()
@@ -504,29 +513,27 @@ namespace FC.Terrain{
                 GPUTerrainCS.EnableKeyword("ENABLE_FRUS_CULL");
             else
                 GPUTerrainCS.DisableKeyword("ENABLE_FRUS_CULL");
-            if(EnvironmentManagerSystem.Instance.enableHizCull)
+            if (EnvironmentManagerSystem.Instance.enableHizCull)
                 GPUTerrainCS.EnableKeyword("ENABLE_HIZ_CULL");
             else
                 GPUTerrainCS.DisableKeyword("ENABLE_HIZ_CULL");
         }
-        public void UpdateTerrainShaderData() 
+        public void UpdateTerrainShaderData()
         {
             terrainMat.SetVectorArray(ShaderProperties.GPUTerrain.globalValueID, globalValue);
             terrainMat.SetTexture(ShaderProperties.GPUTerrain.resultPatchMapID, resultPatchMap);
         }
 
-        public void DrawTerrainInstance() 
+        public void DrawTerrainInstance()
         {
-           
+
             Graphics.DrawMeshInstancedIndirect(terrainMesh, 0, terrainMat, worldBound, instanceArgsBuffer);
-           
+
         }
 
-        public void DebugBuffer() 
+        public void DebugBuffer()
         {
-            cmd.CopyCounterValue(appendTempBuffer2, lengthLogBuffer,0);
-            int[] length3 = new int[1] { 1 };
-            lengthLogBuffer.GetData(length3);
+
 
 #if UNITY_EDITOR
             if (EnvironmentManagerSystem.Instance.debugAllNode)
@@ -536,7 +543,8 @@ namespace FC.Terrain{
                 lengthLogBuffer.GetData(length);
                 debugNodeData = new NodePatchData[length[0]];
                 finaPatchlList.GetData(debugNodeData);
-            }else if (EnvironmentManagerSystem.Instance.debugPatch)
+            }
+            else if (EnvironmentManagerSystem.Instance.debugPatch)
             {
                 int[] length = new int[1] { 1 };
                 lengthLogBuffer.GetData(length);

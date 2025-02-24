@@ -5,7 +5,7 @@ Varyings vert(Attributes input)
 {
     Varyings output;
     uint instanceID = input.instanceID;
-    //½«resultPatchMapÖÐµÄÊý¾Ý¶ÁÈ¡³öÀ´
+    //ï¿½ï¿½resultPatchMapï¿½Ðµï¿½ï¿½ï¿½ï¿½Ý¶ï¿½È¡ï¿½ï¿½ï¿½ï¿½
     uint y = instanceID * 2 / 512;
     uint x = instanceID * 2 - y * 512;
     float2 uv0 = (1.0 / 512) * (uint2(x, y) + 0.5);
@@ -37,42 +37,42 @@ Varyings vert(Attributes input)
 float4 frag(Varyings input) : SV_Target
 {
    
-    //1024ÈÏÎªÊÇalbedoÌùÍ¼µÄ³ß´ç
+    //1024ï¿½ï¿½Îªï¿½ï¿½albedoï¿½ï¿½Í¼ï¿½Ä³ß´ï¿½
     float2 texUV = input.normalUV * 1024 / 30* 3;
-    float texSize = _AlphaMapSize.x;//¸ß¶ÈÍ¼µÄ¿í¶È
-    float texNei = _AlphaMapSize.y;//¸ß¶ÈÍ¼¿í¶È·ÖÖ®Ò»
+    float texSize = _AlphaMapSize.x;//ï¿½ß¶ï¿½Í¼ï¿½Ä¿ï¿½ï¿½ï¿½
+    float texNei = _AlphaMapSize.y;//ï¿½ß¶ï¿½Í¼ï¿½ï¿½ï¿½È·ï¿½Ö®Ò»
 
-    //×ª»¯ÎªÎÆÀí×ø±ê
+    //×ªï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     float2 orignUV = input.normalUV * texSize;
     int2 uvInt1 = floor(orignUV);
 
-    //¹¹½¨²ÉÑùÈý½ÇÐÎ
+    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     int2 uvInt2 = uvInt1 + uint2(0, 1);
     if (orignUV.x - uvInt1.x > orignUV.y - uvInt1.y) {
         uvInt2 = uvInt1 + uint2(1, 0);
     }
 
     uint2 uvInt3 = uvInt1 + uint2(1, 1);
-    // _BlendTexArray.Load(int3(uvInt1, 0)).rÏàµ±ÓÚÎÆÀí²ÉÑù·µ»ØfloatÀàÐÍÊý¾Ý
-    //ÓÉÓÚblenderTexÖÐÎÒÃÇÖ»´æ´¢ÁË16Î»Êý¾Ý£¨ÇÒÊÇµÍ16Î»£©¶øfloatÊÇ32Êý¾Ý£¬Òò´ËÎÒÃÇÍ¨¹ý½«Æä½á¹û³ÊÉÏ0xFFFFÀ´»ñÈ¡µÍ16Î»ÐÅÏ¢
+    // _BlendTexArray.Load(int3(uvInt1, 0)).rï¿½àµ±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½floatï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    //ï¿½ï¿½ï¿½ï¿½blenderTexï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½æ´¢ï¿½ï¿½16Î»ï¿½ï¿½ï¿½Ý£ï¿½ï¿½ï¿½ï¿½Çµï¿½16Î»ï¿½ï¿½ï¿½ï¿½floatï¿½ï¿½32ï¿½ï¿½ï¿½Ý£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½0xFFFFï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½16Î»ï¿½ï¿½Ï¢
     uint blendData1 = _BlendTexArray.Load(uint3(uvInt1, 0)).r * 0xFFFF;
     uint blendData2 = _BlendTexArray.Load(uint3(uvInt2, 0)).r * 0xFFFF;
     uint blendData3 = _BlendTexArray.Load(uint3(uvInt3, 0)).r * 0xFFFF;
 
     int and5 = (1 << 5) - 1;
-    //blend.x´æ´¢È¨ÖØ´óµÄ²ÄÖÊË÷Òý£¬y´æ´¢È¨ÖØµÍµÄ²ÄÖÊË÷Òý
+    //blend.xï¿½æ´¢È¨ï¿½Ø´ï¿½Ä²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½yï¿½æ´¢È¨ï¿½ØµÍµÄ²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     int2 blend1 = int2(blendData1 >> 11, (blendData1 >> 6) & and5);
     int2 blend2 = int2(blendData2 >> 11, (blendData2 >> 6) & and5);
     int2 blend3 = int2(blendData3 >> 11, (blendData3 >> 6) & and5);
-    float2 uv1 = uvInt1 * texNei;//½«ÆäÖØÐÂÓ³Éä»Øuv×ø±ê
-    float2 uv2 = uvInt2 * texNei;//½«ÆäÖØÐÂÓ³Éä»Øuv×ø±ê
-    float2 uv3 = uvInt3 * texNei;//½«ÆäÖØÐÂÓ³Éä»Øuv×ø±ê
-    //ÖØÐÄ²îÖµ¼ÆËãµ±Ç°ÏñËØÈ¨ÖØ
+    float2 uv1 = uvInt1 * texNei;//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½ï¿½ï¿½uvï¿½ï¿½ï¿½ï¿½
+    float2 uv2 = uvInt2 * texNei;//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½ï¿½ï¿½uvï¿½ï¿½ï¿½ï¿½
+    float2 uv3 = uvInt3 * texNei;//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½ï¿½ï¿½uvï¿½ï¿½ï¿½ï¿½
+    //ï¿½ï¿½ï¿½Ä²ï¿½Öµï¿½ï¿½ï¿½ãµ±Ç°ï¿½ï¿½ï¿½ï¿½È¨ï¿½ï¿½
     float w3 = ((uv1.y - uv2.y) * input.uv.x + (uv2.x - uv1.x) * input.uv.y + uv1.x * uv2.y - uv2.x * uv1.y) / ((uv1.y - uv2.y) * uv3.x + (uv2.x - uv1.x) * uv3.y + uv1.x * uv2.y - uv2.x * uv1.y);
     float w2 = ((uv1.y - uv3.y) * input.uv.x + (uv3.x - uv1.x) * input.uv.y + uv1.x * uv3.y - uv3.x * uv1.y) / ((uv1.y - uv3.y) * uv2.x + (uv3.x - uv1.x) * uv2.y + uv1.x * uv3.y - uv3.x * uv1.y);
     float w1 = 1 - w2 - w3;
 
-    //»ñµÃÈý½ÇÐÎÈý¸ö¶¥µãËùÔÚÏñËØµÄÈ¨ÖØÐÅÏ¢
+    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Øµï¿½È¨ï¿½ï¿½ï¿½ï¿½Ï¢
     int and6 = (1 << 6) - 1;
     float inv64 = 0.015625;//1/64
     float diff1 = ((blendData1 & and6) + 1) * inv64;
@@ -94,8 +94,8 @@ float4 frag(Varyings input) : SV_Target
                 float height0, height1, bf1, bf2, bf12;
                 if (blend1.x != blend1.y)
                 {
-                    height0 = SAMPLE_TEXTURE2D_ARRAY(_MinMaxHeightMap, sampler_MinMaxHeightMap, texUV, blend1.x).a;//´Ë´¦Ó¦¸ÃÊ¹ÓÃalpha8µÄHeightMap,²âÊÔÔÝÓÃAlbedoArray
-                    height1 = SAMPLE_TEXTURE2D_ARRAY(_MinMaxHeightMap, sampler_MinMaxHeightMap, texUV, blend1.y).a;//´Ë´¦Ó¦¸ÃÊ¹ÓÃalpha8µÄHeightMap,²âÊÔÔÝÓÃAlbedoArray
+                    height0 = SAMPLE_TEXTURE2D_ARRAY(_MinMaxHeightMap, sampler_MinMaxHeightMap, texUV, blend1.x).a;//ï¿½Ë´ï¿½Ó¦ï¿½ï¿½Ê¹ï¿½ï¿½alpha8ï¿½ï¿½HeightMap,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½AlbedoArray
+                    height1 = SAMPLE_TEXTURE2D_ARRAY(_MinMaxHeightMap, sampler_MinMaxHeightMap, texUV, blend1.y).a;//ï¿½Ë´ï¿½Ó¦ï¿½ï¿½Ê¹ï¿½ï¿½alpha8ï¿½ï¿½HeightMap,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½AlbedoArray
                     bf1 = saturate((blendA * (height0 - height1) + (weight1.x - 0.5) * _BlendScaleArrayShader[blend1.x]) * _BlendSharpnessArrayShader[blend1.x] + 0.5);
                     bf2 = saturate((blendA * (height1 - height0) + (weight1.y - 0.5) * _BlendScaleArrayShader[blend1.y]) * _BlendSharpnessArrayShader[blend1.y] + 0.5);
                     bf12 = max(bf1 + bf2, 0.001); bf1 /= bf12; bf2 /= bf12;
@@ -105,8 +105,8 @@ float4 frag(Varyings input) : SV_Target
 
                 if (blend2.x != blend2.y)
                 {
-                    height0 = SAMPLE_TEXTURE2D_ARRAY(_MinMaxHeightMap, sampler_MinMaxHeightMap, texUV, blend2.x).a;//´Ë´¦Ó¦¸ÃÊ¹ÓÃalpha8µÄHeightMap,²âÊÔÔÝÓÃAlbedoArray
-                    height1 = SAMPLE_TEXTURE2D_ARRAY(_MinMaxHeightMap, sampler_MinMaxHeightMap, texUV, blend2.y).a;//´Ë´¦Ó¦¸ÃÊ¹ÓÃalpha8µÄHeightMap,²âÊÔÔÝÓÃAlbedoArray
+                    height0 = SAMPLE_TEXTURE2D_ARRAY(_MinMaxHeightMap, sampler_MinMaxHeightMap, texUV, blend2.x).a;//ï¿½Ë´ï¿½Ó¦ï¿½ï¿½Ê¹ï¿½ï¿½alpha8ï¿½ï¿½HeightMap,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½AlbedoArray
+                    height1 = SAMPLE_TEXTURE2D_ARRAY(_MinMaxHeightMap, sampler_MinMaxHeightMap, texUV, blend2.y).a;//ï¿½Ë´ï¿½Ó¦ï¿½ï¿½Ê¹ï¿½ï¿½alpha8ï¿½ï¿½HeightMap,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½AlbedoArray
                     bf1 = saturate((blendA * (height0 - height1) + (weight2.x - 0.5) * _BlendScaleArrayShader[blend2.x]) * _BlendSharpnessArrayShader[blend2.x] + 0.5);
                     bf2 = saturate((blendA * (height1 - height0) + (weight2.y - 0.5) * _BlendScaleArrayShader[blend2.y]) * _BlendSharpnessArrayShader[blend2.y] + 0.5);
                     bf12 = max(bf1 + bf2, 0.001); bf1 /= bf12; bf2 /= bf12;
@@ -116,8 +116,8 @@ float4 frag(Varyings input) : SV_Target
 
                 if (blend3.x != blend3.y)
                 {
-                    height0 = SAMPLE_TEXTURE2D_ARRAY(_MinMaxHeightMap, sampler_MinMaxHeightMap, texUV, blend3.x).a;//´Ë´¦Ó¦¸ÃÊ¹ÓÃalpha8µÄHeightMap,²âÊÔÔÝÓÃAlbedoArray
-                    height1 = SAMPLE_TEXTURE2D_ARRAY(_MinMaxHeightMap, sampler_MinMaxHeightMap, texUV, blend3.y).a;//´Ë´¦Ó¦¸ÃÊ¹ÓÃalpha8µÄHeightMap,²âÊÔÔÝÓÃAlbedoArray
+                    height0 = SAMPLE_TEXTURE2D_ARRAY(_MinMaxHeightMap, sampler_MinMaxHeightMap, texUV, blend3.x).a;//ï¿½Ë´ï¿½Ó¦ï¿½ï¿½Ê¹ï¿½ï¿½alpha8ï¿½ï¿½HeightMap,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½AlbedoArray
+                    height1 = SAMPLE_TEXTURE2D_ARRAY(_MinMaxHeightMap, sampler_MinMaxHeightMap, texUV, blend3.y).a;//ï¿½Ë´ï¿½Ó¦ï¿½ï¿½Ê¹ï¿½ï¿½alpha8ï¿½ï¿½HeightMap,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½AlbedoArray
                     bf1 = saturate((blendA * (height0 - height1) + (weight3.x - 0.5) * _BlendScaleArrayShader[blend3.x]) * _BlendSharpnessArrayShader[blend3.x] + 0.5);
                     bf2 = saturate((blendA * (height1 - height0) + (weight3.y - 0.5) * _BlendScaleArrayShader[blend3.y]) * _BlendSharpnessArrayShader[blend3.y] + 0.5);
                     bf12 = max(bf1 + bf2, 0.001); bf1 /= bf12; bf2 /= bf12;

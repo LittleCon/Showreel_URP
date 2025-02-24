@@ -317,5 +317,5 @@ Shader "FC/General/Lit"
 
     }
     FallBack "Hidden/Universal Render Pipeline/FallbackError"
-    CustomEditor "FC.Editor.QCShader.LitShaderGUI"
+    CustomEditor "FC.Editor.FCShader.LitShaderGUI"
 }

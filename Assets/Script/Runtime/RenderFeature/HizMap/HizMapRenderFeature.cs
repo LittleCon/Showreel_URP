@@ -17,44 +17,44 @@ public class HizMapRenderFeature : ScriptableRendererFeature
         private ComputeBuffer dispatchArgsBuffer;
 
         /// <summary>
-        /// µÚÒ»ÅúHizMapÏß³Ì×é²ÎÊý
+        /// ï¿½ï¿½Ò»ï¿½ï¿½HizMapï¿½ß³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         private uint[] buildHizMapArgs0= new uint[3];
         /// <summary>
-        /// µÚ¶þÅúHizMapÏß³Ì×é²ÎÊý
+        /// ï¿½Ú¶ï¿½ï¿½ï¿½HizMapï¿½ß³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         private uint[] buildHizMapArgs1 = new uint[3];
 
         /// <summary>
-        /// µÚÈýÅúHizMapÏß³Ì×é²ÎÊý
+        /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½HizMapï¿½ß³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         private uint[] buildHizMapArgs2 = new uint[3];
 
         /// <summary>
-        /// xy¼ÇÂ¼ÆÁÄ»Êµ¼Ê¿í¸ßºÍzw×î´óÖ§³ÖhizmapµÄ¿í¸ß
+        /// xyï¿½ï¿½Â¼ï¿½ï¿½Ä»Êµï¿½Ê¿ï¿½ï¿½ßºï¿½zwï¿½ï¿½ï¿½Ö§ï¿½ï¿½hizmapï¿½Ä¿ï¿½ï¿½ï¿½
         /// </summary>
         private Vector4 inputDepthMapSize0 = new Vector4();
 
         /// <summary>
-        /// µÚ¶þ´ÎHizMapÉî¶È³ß´ç
+        /// ï¿½Ú¶ï¿½ï¿½ï¿½HizMapï¿½ï¿½È³ß´ï¿½
         /// </summary>
         private Vector4 inputDepthMapSize1 = new Vector4();
 
         /// <summary>
-        /// µÚÈý´ÎHizMapÉî¶È³ß´ç
+        /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½HizMapï¿½ï¿½È³ß´ï¿½
         /// </summary>
         private Vector4 inputDepthMapSize2 = new Vector4();
 
         /// <summary>
-        /// hizMap×î´óµÄMipmapLevel
+        /// hizMapï¿½ï¿½ï¿½ï¿½MipmapLevel
         /// </summary>
         private int mipmapCount = 11;
         /// <summary>
-        /// µÚ¶þ´ÎÉî¶ÈÎÆÀí
+        /// ï¿½Ú¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         private RenderTexture inputDepthMap1;
         /// <summary>
-        /// µÚÈý´ÎÉî¶ÈÎÆÀí
+        /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         private RenderTexture inputDepthMap2;
 
@@ -136,7 +136,7 @@ public class HizMapRenderFeature : ScriptableRendererFeature
             if (hizMapCS == null || environmentSettings == null)
                 return;
             var cmd = CommandBufferPool.Get("BuildHizMap");
-            //»ñÈ¡Ïà»úÉî¶ÈÍ¼
+            //ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¼
             RTHandle depthRTHandle = renderingData.cameraData.renderer.cameraDepthTargetHandle;
             BuildHizMap(cmd, depthRTHandle);
             context.ExecuteCommandBuffer(cmd);
@@ -147,7 +147,7 @@ public class HizMapRenderFeature : ScriptableRendererFeature
         }
         private void BuildHizMap(CommandBuffer cmd, RTHandle depthHandle)
         {
-            //0-3¼¶Mipmap
+            //0-3ï¿½ï¿½Mipmap
             cmd.SetComputeVectorParam(hizMapCS, ShaderProperties.HizMap.inputDepthMapSize, inputDepthMapSize0);
 
             cmd.SetComputeTextureParam(hizMapCS, buildHizMapKernelID, ShaderProperties.HizMap.inputDepthMapID, depthHandle);
@@ -158,7 +158,7 @@ public class HizMapRenderFeature : ScriptableRendererFeature
             cmd.SetBufferData(dispatchArgsBuffer, buildHizMapArgs0);
             cmd.DispatchCompute(hizMapCS, buildHizMapKernelID, dispatchArgsBuffer, 0);
 
-            //4-7¼¶mimap
+            //4-7ï¿½ï¿½mimap
             cmd.SetComputeVectorParam(hizMapCS, ShaderProperties.HizMap.inputDepthMapSize, inputDepthMapSize1);
             cmd.CopyTexture(environmentSettings.hizMap, 0, 3, inputDepthMap1, 0, 0);
             cmd.SetComputeTextureParam(hizMapCS, buildHizMapKernelID, ShaderProperties.HizMap.inputDepthMapID, inputDepthMap1);
@@ -169,7 +169,7 @@ public class HizMapRenderFeature : ScriptableRendererFeature
             cmd.SetBufferData(dispatchArgsBuffer, buildHizMapArgs1);
             cmd.DispatchCompute(hizMapCS, buildHizMapKernelID, dispatchArgsBuffer, 0);
 
-            //8-11¼¶mimap
+            //8-11ï¿½ï¿½mimap
             cmd.SetComputeVectorParam(hizMapCS, ShaderProperties.HizMap.inputDepthMapSize, inputDepthMapSize2);
             cmd.CopyTexture(environmentSettings.hizMap, 0, 6, inputDepthMap2, 0, 0);
             cmd.SetComputeTextureParam(hizMapCS, buildHizMapKernelID, ShaderProperties.HizMap.inputDepthMapID, inputDepthMap2);

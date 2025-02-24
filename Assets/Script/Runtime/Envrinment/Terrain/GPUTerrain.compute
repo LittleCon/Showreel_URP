@@ -304,7 +304,7 @@ void CreateNodeLodMap(uint3 id :SV_DispatchThreadID)
 {
     BaseData baseData = GenerateBaseData(_GlobalValues);
     uint2 sectorID = id.xy;
-    for (int i = baseData.maxLOD; i > -0; i--)
+    for (int i = baseData.maxLOD; i >= 0; i--)
     {
         int2 nodeXY = sectorID >> i;
         uint nodeIndex = GetNodeIndex(baseData, i, nodeXY);
@@ -315,6 +315,7 @@ void CreateNodeLodMap(uint3 id :SV_DispatchThreadID)
             return;
         }
     }
+    _SectorLODMap[sectorID]=0;
 }
 
 [numthreads(1,1,1)]

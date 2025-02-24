@@ -75,8 +75,8 @@ namespace FC.Terrain
             terrainCreateImpl.HizMapCull();
             terrainCreateImpl.UpdateTerrainShaderData();
             terrainCreateImpl.DrawTerrainInstance();
-            terrainCreateImpl.GrassPatchFilter();
-            terrainCreateImpl.GenerateGrass();
+            //terrainCreateImpl.GrassPatchFilter();
+            //terrainCreateImpl.GenerateGrass();
             terrainCreateImpl.ExectCmd();
         }
 #if UNITY_EDITOR
